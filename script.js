@@ -297,15 +297,19 @@ function displaySavedSentences() {
         const contentDiv = document.createElement('div');
         contentDiv.className = 'sentence-content';
         
+        // 英文を1行に収まるように表示（改行を空白に置換）
+        const displayEnglish = item.text.replace(/\n/g, ' ');
+        
         const textDiv = document.createElement('div');
         textDiv.className = 'sentence-text';
-        textDiv.textContent = item.text;
+        textDiv.textContent = displayEnglish;
         
-        // 翻訳がある場合は表示
+        // 翻訳がある場合は表示（改行を空白に置換して1行に）
         if (item.translations && item.translations.length > 0) {
             const translationDiv = document.createElement('div');
             translationDiv.className = 'sentence-translation';
-            translationDiv.textContent = item.translations.join(' ');
+            const displayTranslation = item.translations.join(' ');
+            translationDiv.textContent = displayTranslation;
             contentDiv.appendChild(textDiv);
             contentDiv.appendChild(translationDiv);
         } else {

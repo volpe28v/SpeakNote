@@ -216,6 +216,7 @@ h1 {
     justify-content: space-between;
     align-items: center;
     transition: background-color 0.2s ease;
+    overflow: hidden;
 }
 
 .saved-sentence-item:hover {
@@ -224,6 +225,8 @@ h1 {
 
 .sentence-content {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .sentence-text {
@@ -232,6 +235,9 @@ h1 {
     color: #333;
     margin-bottom: 8px;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sentence-translation {
@@ -243,12 +249,16 @@ h1 {
     padding-left: 12px;
     margin-top: 6px;
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sentence-actions {
     display: flex;
     gap: 8px;
     margin-left: 15px;
+    flex-shrink: 0;
 }
 
 .action-button {
