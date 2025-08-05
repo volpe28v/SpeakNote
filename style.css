@@ -111,7 +111,7 @@ h1 {
     justify-content: center;
 }
 
-#speak-button, #translate-button, #save-button {
+#speak-button, #translate-button, #save-button, #speak-japanese-button {
     padding: 12px 24px;
     font-size: 16px;
     color: white;
@@ -148,6 +148,14 @@ h1 {
 
 #translate-button:disabled:hover {
     background-color: #95a5a6;
+}
+
+#speak-japanese-button {
+    background-color: #e67e22;
+}
+
+#speak-japanese-button:hover {
+    background-color: #d35400;
 }
 
 #save-button {

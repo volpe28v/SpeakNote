@@ -4,6 +4,7 @@ const speakButton = document.getElementById('speak-button');
 const translateButton = document.getElementById('translate-button');
 const translationText = document.getElementById('translation-text');
 const saveButton = document.getElementById('save-button');
+const speakJapaneseButton = document.getElementById('speak-japanese-button');
 
 // 翻訳履歴を管理する配列
 let translationLines = [];
@@ -64,6 +65,28 @@ function speakEnglish(text, isQuestion = false, isFullSentence = false, lineNumb
     utterance.lang = 'en-US'; // アメリカ英語
     utterance.rate = 0.9; // 少しゆっくり目
     utterance.pitch = isQuestion ? 1.2 : 1.0; // 疑問文の場合は少し高めのピッチ
+    utterance.volume = 1.0; // 最大音量
+
+    // 発音実行
+    window.speechSynthesis.speak(utterance);
+}
+
+// 日本語を発音する関数
+function speakJapanese(text) {
+    // 空文字の場合は処理しない
+    if (!text.trim()) {
+        alert('翻訳テキストがありません。まず翻訳ボタンを押してください。');
+        return;
+    }
+
+    // 既存の発音をキャンセル
+    window.speechSynthesis.cancel();
+
+    // 発音の設定
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ja-JP'; // 日本語
+    utterance.rate = 1.0; // 通常の速度
+    utterance.pitch = 1.0; // 通常のピッチ
     utterance.volume = 1.0; // 最大音量
 
     // 発音実行
@@ -178,6 +201,12 @@ translateButton.addEventListener('click', async () => {
         translateButton.textContent = '🔁 翻訳';
         translateButton.style.opacity = '1';
     }
+});
+
+// 日本語読上げボタンクリックイベント
+speakJapaneseButton.addEventListener('click', () => {
+    const japaneseText = translationText.value;
+    speakJapanese(japaneseText);
 });
 
 // localStorage関連の関数
