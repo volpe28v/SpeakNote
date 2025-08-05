@@ -11,24 +11,78 @@ body {
     line-height: 1.6;
     color: #333;
     background-color: #f8f9fa;
-    padding: 20px;
+    padding: 10px;
+    margin: 0;
+    min-height: 100vh;
 }
 
 h1 {
     text-align: center;
     color: #2c3e50;
-    margin-bottom: 30px;
-    font-size: 2rem;
+    margin-bottom: 20px;
+    font-size: 1.8rem;
     font-weight: 600;
 }
 
-#input-area {
-    max-width: 600px;
-    margin: 0 auto;
+/* ノート風レイアウト */
+#notebook-container {
+    max-width: none;
+    margin: 0;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    height: calc(100vh - 120px);
+}
+
+.notebook-side {
+    flex: 1;
     background: white;
-    padding: 25px;
+    padding: 20px;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.notebook-side h2 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    font-size: 1.2rem;
+    text-align: center;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 10px;
+}
+
+#input-area {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#translation-area {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#translation-text {
+    width: 100%;
+    background-color: #f8f9fa;
+    border: 2px solid #e1e8ed;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #666;
+    font-style: italic;
+    resize: none;
+    flex: 1;
+    font-family: inherit;
+    cursor: default;
 }
 
 #english-input {
@@ -40,6 +94,9 @@ h1 {
     outline: none;
     transition: border-color 0.3s ease;
     font-family: inherit;
+    resize: none;
+    flex: 1;
+    line-height: 1.5;
 }
 
 #english-input:focus {
@@ -47,46 +104,197 @@ h1 {
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
-#speak-button {
+.button-group {
+    display: flex;
+    gap: 10px;
     margin-top: 15px;
+    justify-content: center;
+}
+
+#speak-button, #translate-button, #save-button {
     padding: 12px 24px;
     font-size: 16px;
-    background-color: #3498db;
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease;
     font-family: inherit;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
+    flex: 1;
+    max-width: 150px;
+}
+
+#speak-button {
+    background-color: #3498db;
 }
 
 #speak-button:hover {
     background-color: #2980b9;
 }
 
-#speak-button:active {
+#translate-button {
+    background-color: #27ae60;
+}
+
+#translate-button:hover {
+    background-color: #229954;
+}
+
+#save-button {
+    background-color: #e74c3c;
+}
+
+#save-button:hover {
+    background-color: #c0392b;
+}
+
+#speak-button:active, #translate-button:active, #save-button:active {
     transform: translateY(1px);
+}
+
+/* 保存済み文一覧 */
+#saved-sentences-container {
+    max-width: none;
+    margin: 20px 0 0;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#saved-sentences-container h2 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    font-size: 1.2rem;
+    text-align: center;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 10px;
+}
+
+#saved-sentences-list {
+    display: grid;
+    gap: 15px;
+}
+
+.saved-sentence-item {
+    background: #f8f9fa;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.saved-sentence-item:hover {
+    background: #e9ecef;
+}
+
+.sentence-text {
+    flex: 1;
+    font-size: 16px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.sentence-actions {
+    display: flex;
+    gap: 8px;
+    margin-left: 15px;
+}
+
+.action-button {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+    min-width: 35px;
+}
+
+.speak-action {
+    background-color: #3498db;
+}
+
+.speak-action:hover {
+    background-color: #2980b9;
+}
+
+.load-action {
+    background-color: #27ae60;
+}
+
+.load-action:hover {
+    background-color: #229954;
+}
+
+.delete-action {
+    background-color: #e74c3c;
+}
+
+.delete-action:hover {
+    background-color: #c0392b;
+}
+
+.no-saved-sentences {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 30px;
 }
 
 /* モバイル対応 */
 @media (max-width: 768px) {
     body {
-        padding: 15px;
+        padding: 5px;
     }
     
     h1 {
         font-size: 1.5rem;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     
-    #input-area {
-        padding: 20px;
+    #notebook-container {
+        flex-direction: column;
+        gap: 10px;
+        height: calc(100vh - 100px);
+    }
+    
+    .notebook-side {
+        padding: 15px;
+        height: auto;
+        flex: 1;
+    }
+    
+    .notebook-side h2 {
+        font-size: 1.1rem;
+        margin-bottom: 15px;
     }
     
     #english-input {
         font-size: 16px; /* iOS で拡大されるのを防ぐ */
+    }
+    
+    #saved-sentences-container {
+        margin-top: 15px;
+        padding: 15px;
+        max-height: 200px;
+    }
+    
+    .saved-sentence-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .sentence-actions {
+        margin-left: 0;
+        align-self: stretch;
+        justify-content: center;
     }
 }

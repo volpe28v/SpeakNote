@@ -9,9 +9,35 @@
 <body>
     <h1>SpeakNote</h1>
     
-    <div id="input-area">
-        <input type="text" id="english-input" placeholder="英語を入力してください" autofocus>
-        <button id="speak-button">🔊 発音する</button>
+    <div id="notebook-container">
+        <div id="english-side" class="notebook-side">
+            <h2>📝 English</h2>
+            <div id="input-area">
+                <textarea id="english-input" placeholder="英語を入力してください（エンターで改行・翻訳）" autofocus rows="8"></textarea>
+                <div class="button-group">
+                    <button id="speak-button">🔊 発音する</button>
+                    <button id="save-button">💾 保存</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="japanese-side" class="notebook-side">
+            <h2>🗾 日本語訳</h2>
+            <div id="translation-area">
+                <textarea id="translation-text" readonly placeholder="ここに日本語訳が表示されます" rows="8"></textarea>
+                <div class="button-group">
+                    <button id="translate-button">🔁 翻訳</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 保存済み文の一覧 -->
+    <div id="saved-sentences-container">
+        <h2>💾 保存済みの文</h2>
+        <div id="saved-sentences-list">
+            <!-- ここに保存済みの文が表示される -->
+        </div>
     </div>
 
     <script src="script.js"></script>
