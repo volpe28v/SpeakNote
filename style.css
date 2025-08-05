@@ -114,7 +114,7 @@ h1 {
     justify-content: center;
 }
 
-#speak-button, #translate-button, #save-button, #speak-japanese-button {
+#speak-button, #translate-button, #save-button, #speak-japanese-button, #clear-button {
     padding: 16px 20px;
     font-size: 20px;
     color: white;
@@ -170,7 +170,15 @@ h1 {
     background-color: #c0392b;
 }
 
-#speak-button:active, #translate-button:active, #save-button:active {
+#clear-button {
+    background-color: #95a5a6;
+}
+
+#clear-button:hover {
+    background-color: #7f8c8d;
+}
+
+#speak-button:active, #translate-button:active, #save-button:active, #clear-button:active {
     transform: translateY(1px);
 }
 

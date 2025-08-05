@@ -5,6 +5,7 @@ const translateButton = document.getElementById('translate-button');
 const translationText = document.getElementById('translation-text');
 const saveButton = document.getElementById('save-button');
 const speakJapaneseButton = document.getElementById('speak-japanese-button');
+const clearButton = document.getElementById('clear-button');
 
 // 翻訳履歴を管理する配列
 let translationLines = [];
@@ -379,6 +380,22 @@ saveButton.addEventListener('click', () => {
     if (saveSentence(text, translationLines)) {
         alert('保存しました！');
         displaySavedSentences(); // 一覧を更新
+    }
+});
+
+// クリアボタンクリックイベント
+clearButton.addEventListener('click', () => {
+    // 入力内容がある場合のみ確認ダイアログを表示
+    if (englishInput.value.trim() || translationText.value.trim()) {
+        if (confirm('入力内容をクリアしてもよろしいですか？')) {
+            englishInput.value = '';
+            translationText.value = '';
+            translationLines = [];
+            englishInput.focus();
+        }
+    } else {
+        // 既に空の場合は確認なしでフォーカスのみ
+        englishInput.focus();
     }
 });
 
