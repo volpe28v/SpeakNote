@@ -423,15 +423,42 @@ function getCurrentLine(textarea) {
 }
 
 // エンターキーで現在行を文として発音・翻訳、スペースキーで直前の単語を発音、ピリオドで文発音のみ
-englishInput.addEventListener('keydown', (event) => {
+englishInput.addEventListener('keydown', async (event) => {
     if (event.key === 'Enter') {
         // エンターキーが押される前に現在の行番号と行内容を取得
         const lineNumber = getCurrentLineNumber(englishInput);
         const currentLine = getCurrentLine(englishInput);
         
         if (currentLine.trim()) {
-            // 現在行を文として発音のみ（翻訳は削除）
+            // 現在行を文として発音
             speakEnglish(currentLine.trim(), false, true);
+            
+            // 自動的に現在行を翻訳
+            if (GAS_TRANSLATE_URL && !isTranslating) {
+                // 翻訳中の状態を表示
+                isTranslating = true;
+                translateButton.disabled = true;
+                translateButton.textContent = '🔄 翻訳中...';
+                translateButton.style.opacity = '0.6';
+                
+                try {
+                    const translation = await translateWithGoogleAPI(currentLine.trim());
+                    // 翻訳結果を対応する行に設定
+                    while (translationLines.length <= lineNumber) {
+                        translationLines.push('');
+                    }
+                    translationLines[lineNumber] = translation;
+                    updateTranslationDisplay();
+                } catch (error) {
+                    console.error('Auto translation error:', error);
+                } finally {
+                    // 翻訳完了後の状態に戻す
+                    isTranslating = false;
+                    translateButton.disabled = false;
+                    translateButton.textContent = '🔁 翻訳';
+                    translateButton.style.opacity = '1';
+                }
+            }
         }
         // エンターキーは通常通り改行として動作
     } else if (event.key === ' ') {
