@@ -20,8 +20,8 @@ h1 {
     text-align: center;
     color: #2c3e50;
     margin-bottom: 20px;
-    font-size: 1.8rem;
-    font-weight: 600;
+    font-size: 2.8rem;
+    font-weight: 700;
 }
 
 /* ノート風レイアウト */
@@ -48,10 +48,11 @@ h1 {
 .notebook-side h2 {
     margin-bottom: 20px;
     color: #2c3e50;
-    font-size: 1.2rem;
+    font-size: 1.8rem;
     text-align: center;
-    border-bottom: 2px solid #ecf0f1;
-    padding-bottom: 10px;
+    border-bottom: 3px solid #ecf0f1;
+    padding-bottom: 12px;
+    font-weight: 700;
 }
 
 #input-area {
@@ -71,32 +72,34 @@ h1 {
 #translation-text {
     width: 100%;
     background-color: #f8f9fa;
-    border: 2px solid #e1e8ed;
-    border-radius: 8px;
-    padding: 15px;
+    border: 3px solid #e1e8ed;
+    border-radius: 10px;
+    padding: 20px;
     margin-bottom: 15px;
-    font-size: 16px;
-    line-height: 1.5;
-    color: #666;
+    font-size: 22px;
+    line-height: 1.6;
+    color: #555;
     font-style: italic;
     resize: none;
     flex: 1;
     font-family: inherit;
     cursor: default;
+    font-weight: 500;
 }
 
 #english-input {
     width: 100%;
-    padding: 15px;
-    font-size: 16px;
-    border: 2px solid #e1e8ed;
-    border-radius: 8px;
+    padding: 20px;
+    font-size: 24px;
+    border: 3px solid #e1e8ed;
+    border-radius: 10px;
     outline: none;
     transition: border-color 0.3s ease;
     font-family: inherit;
     resize: none;
     flex: 1;
-    line-height: 1.5;
+    line-height: 1.6;
+    font-weight: 500;
 }
 
 #english-input:focus {
@@ -112,16 +115,17 @@ h1 {
 }
 
 #speak-button, #translate-button, #save-button, #speak-japanese-button {
-    padding: 12px 24px;
-    font-size: 16px;
+    padding: 18px 32px;
+    font-size: 20px;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.3s ease;
     font-family: inherit;
     flex: 1;
-    max-width: 150px;
+    max-width: 180px;
+    font-weight: 600;
 }
 
 #speak-button {
@@ -183,10 +187,11 @@ h1 {
 #saved-sentences-container h2 {
     margin-bottom: 20px;
     color: #2c3e50;
-    font-size: 1.2rem;
+    font-size: 1.6rem;
     text-align: center;
-    border-bottom: 2px solid #ecf0f1;
-    padding-bottom: 10px;
+    border-bottom: 3px solid #ecf0f1;
+    padding-bottom: 12px;
+    font-weight: 700;
 }
 
 #saved-sentences-list {
@@ -214,20 +219,22 @@ h1 {
 }
 
 .sentence-text {
-    font-size: 16px;
-    line-height: 1.4;
+    font-size: 20px;
+    line-height: 1.5;
     color: #333;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
+    font-weight: 500;
 }
 
 .sentence-translation {
-    font-size: 14px;
-    line-height: 1.3;
+    font-size: 18px;
+    line-height: 1.4;
     color: #666;
     font-style: italic;
-    border-left: 3px solid #3498db;
-    padding-left: 10px;
-    margin-top: 5px;
+    border-left: 4px solid #3498db;
+    padding-left: 12px;
+    margin-top: 6px;
+    font-weight: 500;
 }
 
 .sentence-actions {
@@ -237,14 +244,15 @@ h1 {
 }
 
 .action-button {
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: 12px 16px;
+    font-size: 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
     color: white;
-    min-width: 35px;
+    min-width: 45px;
+    font-weight: 600;
 }
 
 .speak-action {
@@ -285,7 +293,7 @@ h1 {
     }
     
     h1 {
-        font-size: 1.5rem;
+        font-size: 2.2rem;
         margin-bottom: 15px;
     }
     
@@ -302,12 +310,12 @@ h1 {
     }
     
     .notebook-side h2 {
-        font-size: 1.1rem;
+        font-size: 1.6rem;
         margin-bottom: 15px;
     }
     
     #english-input {
-        font-size: 16px; /* iOS で拡大されるのを防ぐ */
+        font-size: 22px; /* iOS で拡大されるのを防ぐ */
     }
     
     #saved-sentences-container {
