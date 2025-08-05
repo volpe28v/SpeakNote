@@ -91,7 +91,7 @@ function getCurrentLineNumber(textarea) {
 }
 
 // 英語を発音する関数
-function speakEnglish(text, isQuestion = false, isFullSentence = false, lineNumber = null) {
+function speakEnglish(text, isQuestion = false) {
     // 空文字の場合は処理しない
     if (!text.trim()) return;
 
@@ -132,6 +132,44 @@ const GAS_TRANSLATE_URL = 'https://script.google.com/macros/s/AKfycbyTSE6S8wnGYD
 // 翻訳状態を管理
 let isTranslating = false;
 
+// UI文字列の定数
+const UI_STRINGS = {
+    TRANSLATING: '🔄 翻訳中...',
+    TRANSLATING_PROGRESS: (current, total) => `🔄 翻訳中... (${current}/${total})`,
+    TRANSLATE: '🔁 翻訳',
+    TRANSLATION_ERROR: '翻訳中にエラーが発生しました',
+    API_NOT_SET: '翻訳APIが設定されていません。README.mdを参照してGoogle Apps Scriptを設定してください。'
+};
+
+// 翻訳状態の管理関数
+const TranslationState = {
+    start: () => {
+        isTranslating = true;
+        translateButton.disabled = true;
+        translateButton.textContent = UI_STRINGS.TRANSLATING;
+        translateButton.style.opacity = '0.6';
+    },
+    
+    updateProgress: (current, total) => {
+        translateButton.textContent = UI_STRINGS.TRANSLATING_PROGRESS(current, total);
+    },
+    
+    finish: () => {
+        isTranslating = false;
+        translateButton.disabled = false;
+        translateButton.textContent = UI_STRINGS.TRANSLATE;
+        translateButton.style.opacity = '1';
+    },
+    
+    handleError: (error, showAlert = true) => {
+        console.error('Translation error:', error);
+        if (showAlert) {
+            alert(UI_STRINGS.TRANSLATION_ERROR);
+        }
+        TranslationState.finish();
+    }
+};
+
 // Google翻訳APIを使用した翻訳関数
 async function translateWithGoogleAPI(text) {
     if (!GAS_TRANSLATE_URL) {
@@ -171,22 +209,14 @@ translateButton.addEventListener('click', async () => {
     translationLines = [];
     
     // 翻訳中の状態を表示
-    isTranslating = true;
-    translateButton.disabled = true;
-    translateButton.textContent = '🔄 翻訳中...';
-    translateButton.style.opacity = '0.6';
+    TranslationState.start();
     
     // 翻訳進捗表示用のカウンター
     let completedLines = 0;
     const totalLines = englishLines.filter(line => line.trim()).length;
     
-    // 進捗表示関数
-    const updateProgress = () => {
-        translateButton.textContent = `🔄 翻訳中... (${completedLines}/${totalLines})`;
-    };
-    
     if (totalLines > 1) {
-        updateProgress();
+        TranslationState.updateProgress(completedLines, totalLines);
     }
     
     try {
@@ -198,7 +228,7 @@ translateButton.addEventListener('click', async () => {
                 if (line.trim()) {
                     // 翻訳中のアニメーション
                     if (totalLines > 1) {
-                        translateButton.textContent = `🔄 翻訳中... (${completedLines + 1}/${totalLines})`;
+                        TranslationState.updateProgress(completedLines + 1, totalLines);
                     }
                     
                     const translation = await translateWithGoogleAPI(line.trim());
@@ -210,7 +240,7 @@ translateButton.addEventListener('click', async () => {
                     
                     // 進捗更新
                     if (totalLines > 1) {
-                        updateProgress();
+                        TranslationState.updateProgress(completedLines, totalLines);
                     }
                 } else {
                     translationLines[index] = '';
@@ -218,20 +248,15 @@ translateButton.addEventListener('click', async () => {
             }
         } else {
             // Google Apps Script URLが設定されていない場合
-            alert('翻訳APIが設定されていません。README.mdを参照してGoogle Apps Scriptを設定してください。');
+            alert(UI_STRINGS.API_NOT_SET);
+            TranslationState.finish();
             return;
         }
         
         updateTranslationDisplay();
+        TranslationState.finish();
     } catch (error) {
-        console.error('Translation error:', error);
-        alert('翻訳中にエラーが発生しました');
-    } finally {
-        // 翻訳完了後の状態に戻す
-        isTranslating = false;
-        translateButton.disabled = false;
-        translateButton.textContent = '🔁 翻訳';
-        translateButton.style.opacity = '1';
+        TranslationState.handleError(error);
     }
 });
 
@@ -462,15 +487,12 @@ englishInput.addEventListener('keydown', async (event) => {
         
         if (currentLine.trim()) {
             // 現在行を文として発音
-            speakEnglish(currentLine.trim(), false, true);
+            speakEnglish(currentLine.trim(), false);
             
             // 自動的に現在行を翻訳
             if (GAS_TRANSLATE_URL && !isTranslating) {
                 // 翻訳中の状態を表示
-                isTranslating = true;
-                translateButton.disabled = true;
-                translateButton.textContent = '🔄 翻訳中...';
-                translateButton.style.opacity = '0.6';
+                TranslationState.start();
                 
                 try {
                     const translation = await translateWithGoogleAPI(currentLine.trim());
@@ -480,14 +502,9 @@ englishInput.addEventListener('keydown', async (event) => {
                     }
                     translationLines[lineNumber] = translation;
                     updateTranslationDisplay();
+                    TranslationState.finish();
                 } catch (error) {
-                    console.error('Auto translation error:', error);
-                } finally {
-                    // 翻訳完了後の状態に戻す
-                    isTranslating = false;
-                    translateButton.disabled = false;
-                    translateButton.textContent = '🔁 翻訳';
-                    translateButton.style.opacity = '1';
+                    TranslationState.handleError(error, false); // 自動翻訳時はアラートを表示しない
                 }
             }
         }
