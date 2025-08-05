@@ -157,21 +157,41 @@ function getSavedSentences() {
     return saved ? JSON.parse(saved) : [];
 }
 
-function saveSentence(text) {
+function saveSentence(text, translations = null) {
     if (!text.trim()) return false;
     
     const savedSentences = getSavedSentences();
     
-    // 重複チェック
-    if (savedSentences.some(item => item.text === text.trim())) {
-        alert('この文は既に保存されています。');
-        return false;
+    // 重複チェック（英文と翻訳の両方が同じ場合のみ重複とする）
+    const existingItem = savedSentences.find(item => item.text === text.trim());
+    if (existingItem) {
+        // 翻訳が同じかチェック
+        const existingTranslations = existingItem.translations || [];
+        const newTranslations = translations || [];
+        
+        // 翻訳内容が同じ場合のみ重複エラー
+        if (JSON.stringify(existingTranslations) === JSON.stringify(newTranslations)) {
+            alert('この文は既に保存されています。');
+            return false;
+        }
+        
+        // 翻訳が異なる場合は確認ダイアログを表示
+        if (confirm('同じ英文ですが、翻訳が異なります。新しい翻訳で上書きしますか？')) {
+            // 既存のアイテムを削除
+            const index = savedSentences.findIndex(item => item.id === existingItem.id);
+            if (index !== -1) {
+                savedSentences.splice(index, 1);
+            }
+        } else {
+            return false;
+        }
     }
     
     // 新しいアイテムを作成
     const newItem = {
         id: Date.now(),
         text: text.trim(),
+        translations: translations || [], // 日本語訳を保存
         timestamp: new Date().toISOString()
     };
     
@@ -214,9 +234,24 @@ function displaySavedSentences() {
         itemDiv.className = 'saved-sentence-item';
         itemDiv.dataset.id = item.id;
         
+        // 英文と翻訳を含むコンテナ
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'sentence-content';
+        
         const textDiv = document.createElement('div');
         textDiv.className = 'sentence-text';
         textDiv.textContent = item.text;
+        
+        // 翻訳がある場合は表示
+        if (item.translations && item.translations.length > 0) {
+            const translationDiv = document.createElement('div');
+            translationDiv.className = 'sentence-translation';
+            translationDiv.textContent = item.translations.join(' ');
+            contentDiv.appendChild(textDiv);
+            contentDiv.appendChild(translationDiv);
+        } else {
+            contentDiv.appendChild(textDiv);
+        }
         
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'sentence-actions';
@@ -231,7 +266,7 @@ function displaySavedSentences() {
         const loadBtn = document.createElement('button');
         loadBtn.className = 'action-button load-action';
         loadBtn.textContent = '✏️';
-        loadBtn.addEventListener('click', () => loadSavedSentence(item.text));
+        loadBtn.addEventListener('click', () => loadSavedSentence(item));
         
         // 削除ボタン
         const deleteBtn = document.createElement('button');
@@ -243,7 +278,7 @@ function displaySavedSentences() {
         actionsDiv.appendChild(loadBtn);
         actionsDiv.appendChild(deleteBtn);
         
-        itemDiv.appendChild(textDiv);
+        itemDiv.appendChild(contentDiv);
         itemDiv.appendChild(actionsDiv);
         
         listContainer.appendChild(itemDiv);
@@ -256,13 +291,19 @@ function speakSavedSentence(text) {
 }
 
 // 保存済み文を入力エリアに読み込む関数
-function loadSavedSentence(text) {
-    englishInput.value = text;
+function loadSavedSentence(item) {
+    englishInput.value = item.text;
     englishInput.focus();
     
-    // 翻訳履歴をクリアする（翻訳ボタンを押すまで日本語訳は表示しない）
-    translationLines = [];
-    translationText.value = '';
+    // 保存された翻訳がある場合は表示
+    if (item.translations && item.translations.length > 0) {
+        translationLines = item.translations;
+        updateTranslationDisplay();
+    } else {
+        // 翻訳がない場合はクリア
+        translationLines = [];
+        translationText.value = '';
+    }
 }
 
 // 保存済み文を削除する関数（UI用）
@@ -276,7 +317,8 @@ function deleteSavedSentenceById(id) {
 // 保存ボタンクリックイベント
 saveButton.addEventListener('click', () => {
     const text = englishInput.value;
-    if (saveSentence(text)) {
+    // 現在の翻訳も一緒に保存
+    if (saveSentence(text, translationLines)) {
         alert('保存しました！');
         displaySavedSentences(); // 一覧を更新
     }
