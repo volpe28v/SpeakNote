@@ -14,9 +14,68 @@ let translationLines = [];
 const STORAGE_KEY = 'speakNote_savedSentences';
 const MAX_SAVED_ITEMS = 100;
 
+// 音声合成の設定定数
+const SPEECH_CONFIG = {
+    ENGLISH: {
+        lang: 'en-GB',
+        rate: 0.7,
+        pitch: 1.0,
+        volume: 1.0
+    },
+    ENGLISH_QUESTION: {
+        lang: 'en-GB',
+        rate: 0.7,
+        pitch: 1.2,
+        volume: 1.0
+    },
+    JAPANESE: {
+        lang: 'ja-JP',
+        rate: 1.0,
+        pitch: 1.0,
+        volume: 1.0
+    },
+    PAUSE: {
+        lang: 'en-GB',
+        rate: 0.5,
+        pitch: 1.0,
+        volume: 1.0
+    }
+};
+
 // Web Speech APIの確認
 if (!('speechSynthesis' in window)) {
     alert('お使いのブラウザは音声合成に対応していません。');
+}
+
+// 音声合成用のUtteranceを作成する共通関数
+function createUtterance(text, config) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = config.lang;
+    utterance.rate = config.rate;
+    utterance.pitch = config.pitch;
+    utterance.volume = config.volume;
+    return utterance;
+}
+
+// 複数行のテキストを順番に発音する共通関数
+function speakMultipleLines(text) {
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    // 既存の発音をキャンセル
+    window.speechSynthesis.cancel();
+    
+    // 各行を順番に発音（間に一拍置く）
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const utterance = createUtterance(line, SPEECH_CONFIG.ENGLISH);
+        window.speechSynthesis.speak(utterance);
+        
+        // 最後の行でなければ一拍置く
+        if (i < lines.length - 1) {
+            const pause = createUtterance(' ', SPEECH_CONFIG.PAUSE);
+            window.speechSynthesis.speak(pause);
+        }
+    }
 }
 
 // 翻訳表示を更新する関数
@@ -39,36 +98,15 @@ function speakEnglish(text, isQuestion = false, isFullSentence = false, lineNumb
     // 既存の発音をキャンセル
     window.speechSynthesis.cancel();
 
-    // 翻訳ボタンを押した時のみ翻訳するため、ここでは翻訳を実行しない
-    // 以前の自動翻訳機能をコメントアウト
-    /*
-    const translation = translateToJapanese(text, isFullSentence);
-    
-    if (lineNumber !== null) {
-        while (translationLines.length <= lineNumber) {
-            translationLines.push('');
-        }
-        translationLines[lineNumber] = translation;
-        updateTranslationDisplay();
-    } else {
-        translationText.value = translation;
-    }
-    */
-
     // 単独の大文字「I」の場合、発音を改善するため小文字に変換
     let processedText = text;
     if (text === 'I') {
         processedText = 'i';
     }
 
-    // 発音の設定
-    const utterance = new SpeechSynthesisUtterance(processedText);
-    utterance.lang = 'en-GB'; // イギリス英語
-    utterance.rate = 0.7; // ゆっくり目
-    utterance.pitch = isQuestion ? 1.2 : 1.0; // 疑問文の場合は少し高めのピッチ
-    utterance.volume = 1.0; // 最大音量
-
-    // 発音実行
+    // 設定を選択して発音実行
+    const config = isQuestion ? SPEECH_CONFIG.ENGLISH_QUESTION : SPEECH_CONFIG.ENGLISH;
+    const utterance = createUtterance(processedText, config);
     window.speechSynthesis.speak(utterance);
 }
 
@@ -83,14 +121,8 @@ function speakJapanese(text) {
     // 既存の発音をキャンセル
     window.speechSynthesis.cancel();
 
-    // 発音の設定
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ja-JP'; // 日本語
-    utterance.rate = 1.0; // 通常の速度
-    utterance.pitch = 1.0; // 通常のピッチ
-    utterance.volume = 1.0; // 最大音量
-
     // 発音実行
+    const utterance = createUtterance(text, SPEECH_CONFIG.JAPANESE);
     window.speechSynthesis.speak(utterance);
 }
 
@@ -128,34 +160,7 @@ async function translateWithGoogleAPI(text) {
 
 // ボタンクリックイベント
 speakButton.addEventListener('click', async () => {
-    const lines = englishInput.value.split('\n').filter(line => line.trim());
-    
-    // 既存の発音をキャンセル
-    window.speechSynthesis.cancel();
-    
-    // 各行を順番に発音（間に一拍置く）
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        
-        // 発音の設定
-        const utterance = new SpeechSynthesisUtterance(line);
-        utterance.lang = 'en-GB';
-        utterance.rate = 0.7;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        // 発音実行
-        window.speechSynthesis.speak(utterance);
-        
-        // 最後の行でなければ一拍置く
-        if (i < lines.length - 1) {
-            // 無音の発話を追加して間を作る
-            const pause = new SpeechSynthesisUtterance(' ');
-            pause.lang = 'en-GB';
-            pause.rate = 0.5; // ゆっくりにして間を長くする
-            window.speechSynthesis.speak(pause);
-        }
-    }
+    speakMultipleLines(englishInput.value);
 });
 
 // 翻訳ボタンクリックイベント（全体を再翻訳）
@@ -376,34 +381,7 @@ function displaySavedSentences() {
 
 // 保存済み文を読み上げる関数
 function speakSavedSentence(text) {
-    const lines = text.split('\n').filter(line => line.trim());
-    
-    // 既存の発音をキャンセル
-    window.speechSynthesis.cancel();
-    
-    // 各行を順番に発音（間に一拍置く）
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        
-        // 発音の設定
-        const utterance = new SpeechSynthesisUtterance(line);
-        utterance.lang = 'en-GB';
-        utterance.rate = 0.7;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        // 発音実行
-        window.speechSynthesis.speak(utterance);
-        
-        // 最後の行でなければ一拍置く
-        if (i < lines.length - 1) {
-            // 無音の発話を追加して間を作る
-            const pause = new SpeechSynthesisUtterance(' ');
-            pause.lang = 'en-GB';
-            pause.rate = 0.5; // ゆっくりにして間を長くする
-            window.speechSynthesis.speak(pause);
-        }
-    }
+    speakMultipleLines(text);
 }
 
 // 保存済み文を入力エリアに読み込む関数
@@ -528,11 +506,7 @@ englishInput.addEventListener('keydown', async (event) => {
                 // 単語のみを発音（翻訳は更新しない）
                 window.speechSynthesis.cancel();
                 let processedText = lastWord === 'I' ? 'i' : lastWord;
-                const utterance = new SpeechSynthesisUtterance(processedText);
-                utterance.lang = 'en-GB';
-                utterance.rate = 0.7;
-                utterance.pitch = 1.0;
-                utterance.volume = 1.0;
+                const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH);
                 window.speechSynthesis.speak(utterance);
             }
         }
@@ -546,11 +520,8 @@ englishInput.addEventListener('keydown', async (event) => {
                 // 疑問符の場合は疑問文として発音のみ
                 window.speechSynthesis.cancel();
                 let processedText = currentLine.trim();
-                const utterance = new SpeechSynthesisUtterance(processedText);
-                utterance.lang = 'en-GB';
-                utterance.rate = 0.7; 
-                utterance.pitch = punctuation === '?' ? 1.2 : 1.0;
-                utterance.volume = 1.0;
+                const config = punctuation === '?' ? SPEECH_CONFIG.ENGLISH_QUESTION : SPEECH_CONFIG.ENGLISH;
+                const utterance = createUtterance(processedText, config);
                 window.speechSynthesis.speak(utterance);
             }
         }, 50);
