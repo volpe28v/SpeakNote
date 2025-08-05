@@ -37,21 +37,21 @@ function speakEnglish(text, isQuestion = false, isFullSentence = false, lineNumb
     // 既存の発音をキャンセル
     window.speechSynthesis.cancel();
 
-    // 翻訳を実行
+    // 翻訳ボタンを押した時のみ翻訳するため、ここでは翻訳を実行しない
+    // 以前の自動翻訳機能をコメントアウト
+    /*
     const translation = translateToJapanese(text, isFullSentence);
     
-    // 行番号が指定されている場合、その行の翻訳を更新
     if (lineNumber !== null) {
-        // 配列のサイズを必要に応じて拡張
         while (translationLines.length <= lineNumber) {
             translationLines.push('');
         }
         translationLines[lineNumber] = translation;
         updateTranslationDisplay();
     } else {
-        // 行番号が指定されていない場合は従来通り
         translationText.value = translation;
     }
+    */
 
     // 単独の大文字「I」の場合、発音を改善するため小文字に変換
     let processedText = text;
@@ -70,7 +70,38 @@ function speakEnglish(text, isQuestion = false, isFullSentence = false, lineNumb
     window.speechSynthesis.speak(utterance);
 }
 
-// 簡易翻訳関数（仮実装）
+// Google Apps Script翻訳APIのURL（デプロイ後に設定）
+const GAS_TRANSLATE_URL = 'https://script.google.com/macros/s/AKfycbyTSE6S8wnGYDQhQ3gKeVwIiDt3uwlxZoUBFfJ3YCrc1dCn76sQR3YJ5bM2vsuVEboc/exec';
+
+// 翻訳状態を管理
+let isTranslating = false;
+
+// Google翻訳APIを使用した翻訳関数
+async function translateWithGoogleAPI(text) {
+    if (!GAS_TRANSLATE_URL) {
+        console.warn('Google Apps Script URLが設定されていません');
+        return translateToJapanese(text, true); // フォールバック
+    }
+
+    try {
+        const response = await fetch(
+            `${GAS_TRANSLATE_URL}?text=${encodeURIComponent(text)}&source=en&target=ja`
+        );
+        const data = await response.json();
+        
+        if (data.success) {
+            return data.text;
+        } else {
+            console.error('Translation API error:', data.error);
+            return translateToJapanese(text, true); // フォールバック
+        }
+    } catch (error) {
+        console.error('Network error:', error);
+        return translateToJapanese(text, true); // フォールバック
+    }
+}
+
+// 簡易翻訳関数（フォールバック用）
 function translateToJapanese(text, isFullSentence = false) {
     // 基本的な単語とフレーズの辞書
     const dictionary = {
@@ -160,20 +191,52 @@ speakButton.addEventListener('click', () => {
 });
 
 // 翻訳ボタンクリックイベント（全体を再翻訳）
-translateButton.addEventListener('click', () => {
+translateButton.addEventListener('click', async () => {
+    if (isTranslating) return; // 翻訳中は無効化
+    
     const englishLines = englishInput.value.split('\n');
     translationLines = [];
     
-    englishLines.forEach((line, index) => {
-        if (line.trim()) {
-            const translation = translateToJapanese(line.trim(), true);
-            translationLines[index] = translation;
-        } else {
-            translationLines[index] = '';
-        }
-    });
+    // 翻訳中の状態を表示
+    isTranslating = true;
+    translateButton.disabled = true;
+    translateButton.textContent = '🔄 翻訳中...';
     
-    updateTranslationDisplay();
+    try {
+        // Google Apps Script APIが設定されている場合
+        if (GAS_TRANSLATE_URL) {
+            // 各行を個別に翻訳
+            for (let index = 0; index < englishLines.length; index++) {
+                const line = englishLines[index];
+                if (line.trim()) {
+                    const translation = await translateWithGoogleAPI(line.trim());
+                    translationLines[index] = translation;
+                } else {
+                    translationLines[index] = '';
+                }
+            }
+        } else {
+            // フォールバック：従来の翻訳方法
+            englishLines.forEach((line, index) => {
+                if (line.trim()) {
+                    const translation = translateToJapanese(line.trim(), true);
+                    translationLines[index] = translation;
+                } else {
+                    translationLines[index] = '';
+                }
+            });
+        }
+        
+        updateTranslationDisplay();
+    } catch (error) {
+        console.error('Translation error:', error);
+        alert('翻訳中にエラーが発生しました');
+    } finally {
+        // 翻訳完了後の状態に戻す
+        isTranslating = false;
+        translateButton.disabled = false;
+        translateButton.textContent = '🔁 翻訳';
+    }
 });
 
 // localStorage関連の関数
@@ -343,8 +406,8 @@ englishInput.addEventListener('keydown', (event) => {
         const currentLine = getCurrentLine(englishInput);
         
         if (currentLine.trim()) {
-            // 現在行を文として発音・翻訳（行番号を指定）
-            speakEnglish(currentLine.trim(), false, true, lineNumber);
+            // 現在行を文として発音のみ（翻訳は削除）
+            speakEnglish(currentLine.trim(), false, true);
         }
         // エンターキーは通常通り改行として動作
     } else if (event.key === ' ') {
