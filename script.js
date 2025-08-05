@@ -80,7 +80,7 @@ let isTranslating = false;
 async function translateWithGoogleAPI(text) {
     if (!GAS_TRANSLATE_URL) {
         console.warn('Google Apps Script URLが設定されていません');
-        return translateToJapanese(text, true); // フォールバック
+        return '翻訳APIが設定されていません';
     }
 
     try {
@@ -93,96 +93,14 @@ async function translateWithGoogleAPI(text) {
             return data.text;
         } else {
             console.error('Translation API error:', data.error);
-            return translateToJapanese(text, true); // フォールバック
+            return '翻訳エラー: ' + data.error;
         }
     } catch (error) {
         console.error('Network error:', error);
-        return translateToJapanese(text, true); // フォールバック
+        return '通信エラー: 翻訳できませんでした';
     }
 }
 
-// 簡易翻訳関数（フォールバック用）
-function translateToJapanese(text, isFullSentence = false) {
-    // 基本的な単語とフレーズの辞書
-    const dictionary = {
-        'hello': 'こんにちは',
-        'world': '世界',
-        'i': '私',
-        'am': 'です/である',
-        'a': '一つの',
-        'student': '学生',
-        'good': '良い',
-        'morning': '朝',
-        'how': 'どのように',
-        'are': 'です/である',
-        'you': 'あなた',
-        'fine': '元気',
-        'thank': '感謝する',
-        'thanks': 'ありがとう',
-        'my': '私の',
-        'name': '名前',
-        'is': 'です/である',
-        'nice': '素晴らしい',
-        'to': 'へ/に',
-        'meet': '会う',
-        'what': '何',
-        'your': 'あなたの',
-        'where': 'どこ',
-        'when': 'いつ',
-        'why': 'なぜ',
-        'who': '誰',
-        'this': 'これ',
-        'that': 'それ',
-        'yes': 'はい',
-        'no': 'いいえ',
-        'please': 'お願いします',
-        'sorry': 'すみません',
-        'excuse': '失礼',
-        'me': '私を',
-        'can': 'できる',
-        'help': '助ける',
-        'love': '愛する',
-        'like': '好き',
-        'book': '本',
-        'cat': '猫',
-        'dog': '犬',
-        'have': '持っている',
-        'pen': 'ペン'
-    };
-
-    // 文全体のパターン翻訳（よく使われる表現）
-    const sentencePatterns = {
-        'hello world': 'こんにちは世界',
-        'i am a student': '私は学生です',
-        'good morning': 'おはようございます',
-        'how are you': '元気ですか',
-        'i am fine': '私は元気です',
-        'thank you': 'ありがとう',
-        'my name is': '私の名前は',
-        'nice to meet you': 'はじめまして',
-        'what is your name': 'あなたの名前は何ですか',
-        'where are you': 'あなたはどこにいますか',
-        'i love you': '愛しています',
-        'can you help me': '助けてもらえますか',
-        'i have a pen': '私はペンを持っています',
-        'you have a pen': 'あなたはペンを持っています'
-    };
-
-    if (!text.trim()) return 'まず英語を入力してください';
-
-    const cleanText = text.toLowerCase().replace(/[.,!?]/g, '');
-
-    // 一文として翻訳する場合、まず文全体のパターンをチェック
-    if (isFullSentence && sentencePatterns[cleanText]) {
-        return sentencePatterns[cleanText];
-    }
-
-    // 単語ごとの翻訳（従来の方法）
-    const words = cleanText.split(/\s+/);
-    const translations = words.map(word => dictionary[word] || `[${word}]`);
-
-    return translations.join(' ');
-}
 
 // ボタンクリックイベント
 speakButton.addEventListener('click', () => {
@@ -216,15 +134,9 @@ translateButton.addEventListener('click', async () => {
                 }
             }
         } else {
-            // フォールバック：従来の翻訳方法
-            englishLines.forEach((line, index) => {
-                if (line.trim()) {
-                    const translation = translateToJapanese(line.trim(), true);
-                    translationLines[index] = translation;
-                } else {
-                    translationLines[index] = '';
-                }
-            });
+            // Google Apps Script URLが設定されていない場合
+            alert('翻訳APIが設定されていません。README.mdを参照してGoogle Apps Scriptを設定してください。');
+            return;
         }
         
         updateTranslationDisplay();
@@ -348,18 +260,9 @@ function loadSavedSentence(text) {
     englishInput.value = text;
     englishInput.focus();
     
-    // 翻訳履歴をクリアして新しい翻訳を設定
+    // 翻訳履歴をクリアする（翻訳ボタンを押すまで日本語訳は表示しない）
     translationLines = [];
-    const lines = text.split('\n');
-    lines.forEach((line, index) => {
-        if (line.trim()) {
-            const translation = translateToJapanese(line.trim(), true);
-            translationLines[index] = translation;
-        } else {
-            translationLines[index] = '';
-        }
-    });
-    updateTranslationDisplay();
+    translationText.value = '';
 }
 
 // 保存済み文を削除する関数（UI用）
