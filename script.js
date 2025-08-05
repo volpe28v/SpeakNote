@@ -119,6 +119,20 @@ translateButton.addEventListener('click', async () => {
     isTranslating = true;
     translateButton.disabled = true;
     translateButton.textContent = '🔄 翻訳中...';
+    translateButton.style.opacity = '0.6';
+    
+    // 翻訳進捗表示用のカウンター
+    let completedLines = 0;
+    const totalLines = englishLines.filter(line => line.trim()).length;
+    
+    // 進捗表示関数
+    const updateProgress = () => {
+        translateButton.textContent = `🔄 翻訳中... (${completedLines}/${totalLines})`;
+    };
+    
+    if (totalLines > 1) {
+        updateProgress();
+    }
     
     try {
         // Google Apps Script APIが設定されている場合
@@ -127,8 +141,22 @@ translateButton.addEventListener('click', async () => {
             for (let index = 0; index < englishLines.length; index++) {
                 const line = englishLines[index];
                 if (line.trim()) {
+                    // 翻訳中のアニメーション
+                    if (totalLines > 1) {
+                        translateButton.textContent = `🔄 翻訳中... (${completedLines + 1}/${totalLines})`;
+                    }
+                    
                     const translation = await translateWithGoogleAPI(line.trim());
                     translationLines[index] = translation;
+                    completedLines++;
+                    
+                    // リアルタイムで翻訳結果を表示
+                    updateTranslationDisplay();
+                    
+                    // 進捗更新
+                    if (totalLines > 1) {
+                        updateProgress();
+                    }
                 } else {
                     translationLines[index] = '';
                 }
@@ -148,6 +176,7 @@ translateButton.addEventListener('click', async () => {
         isTranslating = false;
         translateButton.disabled = false;
         translateButton.textContent = '🔁 翻訳';
+        translateButton.style.opacity = '1';
     }
 });
 
