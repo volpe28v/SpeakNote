@@ -115,7 +115,7 @@ h1 {
 }
 
 #speak-button, #translate-button, #save-button, #speak-japanese-button {
-    padding: 18px 32px;
+    padding: 16px 20px;
     font-size: 20px;
     color: white;
     border: none;
