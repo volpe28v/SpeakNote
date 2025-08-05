@@ -11,7 +11,7 @@ let translationLines = [];
 
 // 保存機能のための定数
 const STORAGE_KEY = 'speakNote_savedSentences';
-const MAX_SAVED_ITEMS = 20;
+const MAX_SAVED_ITEMS = 100;
 
 // Web Speech APIの確認
 if (!('speechSynthesis' in window)) {
