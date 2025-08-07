@@ -336,7 +336,6 @@ function saveNote(text, translations = null) {
             };
             
             localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-            EditingState.startNew(); // 編集状態を終了
             return 'updated';
         }
     }
@@ -442,23 +441,27 @@ function displayNotes() {
         const speakBtn = document.createElement('button');
         speakBtn.className = 'action-button speak-action';
         speakBtn.textContent = '▶️';
-        speakBtn.addEventListener('click', () => speakNote(item.text));
-        
-        // 読み込みボタン
-        const loadBtn = document.createElement('button');
-        loadBtn.className = 'action-button load-action';
-        loadBtn.textContent = '✏️';
-        loadBtn.addEventListener('click', () => loadNote(item));
+        speakBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // ノート選択イベントを防ぐ
+            speakNote(item.text);
+        });
         
         // 削除ボタン
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'action-button delete-action';
         deleteBtn.textContent = '❌';
-        deleteBtn.addEventListener('click', () => deleteNoteById(item.id));
+        deleteBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // ノート選択イベントを防ぐ
+            deleteNoteById(item.id);
+        });
         
         actionsDiv.appendChild(speakBtn);
-        actionsDiv.appendChild(loadBtn);
         actionsDiv.appendChild(deleteBtn);
+        
+        // ノート全体をクリッカブルにする
+        itemDiv.addEventListener('click', () => {
+            loadNote(item);
+        });
         
         itemDiv.appendChild(contentDiv);
         itemDiv.appendChild(actionsDiv);
