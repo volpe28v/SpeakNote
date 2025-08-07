@@ -10,6 +10,9 @@ const clearButton = document.getElementById('clear-button');
 // 翻訳履歴を管理する配列
 let translationLines = [];
 
+// 編集中のアイテムID（更新保存のため）
+let currentEditingId = null;
+
 // 保存機能のための定数
 const STORAGE_KEY = 'speakNote_savedSentences';
 const MAX_SAVED_ITEMS = 100;
@@ -138,7 +141,12 @@ const UI_STRINGS = {
     TRANSLATING_PROGRESS: (current, total) => `🔄 翻訳中... (${current}/${total})`,
     TRANSLATE: '🔁 翻訳',
     TRANSLATION_ERROR: '翻訳中にエラーが発生しました',
-    API_NOT_SET: '翻訳APIが設定されていません。README.mdを参照してGoogle Apps Scriptを設定してください。'
+    API_NOT_SET: '翻訳APIが設定されていません。README.mdを参照してGoogle Apps Scriptを設定してください。',
+    SAVE_NEW: '💾 保存',
+    SAVE_UPDATE: '📝 更新',
+    NEW_NOTE: '📄 新規作成',
+    SAVED_NEW: '保存しました！',
+    UPDATED: '更新しました！'
 };
 
 // 翻訳状態の管理関数
@@ -167,6 +175,42 @@ const TranslationState = {
             alert(UI_STRINGS.TRANSLATION_ERROR);
         }
         TranslationState.finish();
+    }
+};
+
+// 編集状態の管理関数
+const EditingState = {
+    startEditing: (itemId) => {
+        currentEditingId = itemId;
+        EditingState.updateUI();
+        EditingState.updateSavedSentenceHighlight();
+    },
+    
+    startNew: () => {
+        currentEditingId = null;
+        EditingState.updateUI();
+        EditingState.updateSavedSentenceHighlight();
+    },
+    
+    updateUI: () => {
+        const isEditing = currentEditingId !== null;
+        saveButton.textContent = isEditing ? UI_STRINGS.SAVE_UPDATE : UI_STRINGS.SAVE_NEW;
+        clearButton.textContent = UI_STRINGS.NEW_NOTE;
+    },
+    
+    updateSavedSentenceHighlight: () => {
+        // 全てのノートのハイライトをリセット
+        document.querySelectorAll('.saved-sentence-item').forEach(item => {
+            item.classList.remove('editing');
+        });
+        
+        // 編集中のアイテムがあればハイライト
+        if (currentEditingId) {
+            const editingItem = document.querySelector(`[data-id="${currentEditingId}"]`);
+            if (editingItem) {
+                editingItem.classList.add('editing');
+            }
+        }
     }
 };
 
@@ -267,35 +311,54 @@ speakJapaneseButton.addEventListener('click', () => {
 });
 
 // localStorage関連の関数
-function getSavedSentences() {
+function getNotes() {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
 }
 
-function saveSentence(text, translations = null) {
+function saveNote(text, translations = null) {
     if (!text.trim()) return false;
     
-    const savedSentences = getSavedSentences();
+    const notes = getNotes();
+    const trimmedText = text.trim();
+    const cleanTranslations = translations || [];
     
-    // 重複チェック（英文と翻訳の両方が同じ場合のみ重複とする）
-    const existingItem = savedSentences.find(item => item.text === text.trim());
+    // 編集中のアイテムがある場合は更新処理
+    if (currentEditingId) {
+        const editingIndex = notes.findIndex(item => item.id === currentEditingId);
+        if (editingIndex !== -1) {
+            // 既存のアイテムを更新
+            notes[editingIndex] = {
+                ...notes[editingIndex],
+                text: trimmedText,
+                translations: cleanTranslations,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+            EditingState.startNew(); // 編集状態を終了
+            return 'updated';
+        }
+    }
+    
+    // 新規作成の場合：重複チェック
+    const existingItem = notes.find(item => item.text === trimmedText);
     if (existingItem) {
         // 翻訳が同じかチェック
         const existingTranslations = existingItem.translations || [];
-        const newTranslations = translations || [];
         
         // 翻訳内容が同じ場合のみ重複エラー
-        if (JSON.stringify(existingTranslations) === JSON.stringify(newTranslations)) {
-            alert('この文は既に保存されています。');
+        if (JSON.stringify(existingTranslations) === JSON.stringify(cleanTranslations)) {
+            alert('このノートは既に保存されています。');
             return false;
         }
         
         // 翻訳が異なる場合は確認ダイアログを表示
-        if (confirm('同じ英文ですが、翻訳が異なります。新しい翻訳で上書きしますか？')) {
+        if (confirm('同じ英文のノートですが、翻訳が異なります。新しい翻訳で上書きしますか？')) {
             // 既存のアイテムを削除
-            const index = savedSentences.findIndex(item => item.id === existingItem.id);
+            const index = notes.findIndex(item => item.id === existingItem.id);
             if (index !== -1) {
-                savedSentences.splice(index, 1);
+                notes.splice(index, 1);
             }
         } else {
             return false;
@@ -305,38 +368,38 @@ function saveSentence(text, translations = null) {
     // 新しいアイテムを作成
     const newItem = {
         id: Date.now(),
-        text: text.trim(),
-        translations: translations || [], // 日本語訳を保存
+        text: trimmedText,
+        translations: cleanTranslations,
         timestamp: new Date().toISOString()
     };
     
     // 配列の先頭に追加
-    savedSentences.unshift(newItem);
+    notes.unshift(newItem);
     
     // 最大数を超えた場合、古いものを削除
-    if (savedSentences.length > MAX_SAVED_ITEMS) {
-        savedSentences.splice(MAX_SAVED_ITEMS);
+    if (notes.length > MAX_SAVED_ITEMS) {
+        notes.splice(MAX_SAVED_ITEMS);
     }
     
     // localStorageに保存
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedSentences));
     
-    return true;
+    return 'saved';
 }
 
-function deleteSavedSentence(id) {
-    const savedSentences = getSavedSentences();
-    const filtered = savedSentences.filter(item => item.id !== id);
+function deleteNote(id) {
+    const notes = getNotes();
+    const filtered = notes.filter(item => item.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
-// 保存済み文一覧を表示する関数
-function displaySavedSentences() {
-    const savedSentences = getSavedSentences();
+// ノート一覧を表示する関数
+function displayNotes() {
+    const notes = getNotes();
     const listContainer = document.getElementById('saved-sentences-list');
     
-    if (savedSentences.length === 0) {
-        listContainer.innerHTML = '<div class="no-saved-sentences">保存された文はありません</div>';
+    if (notes.length === 0) {
+        listContainer.innerHTML = '<div class="no-notes">ノートがありません</div>';
         return;
     }
     
@@ -344,7 +407,7 @@ function displaySavedSentences() {
     listContainer.innerHTML = '';
     
     // 各アイテムを動的に作成
-    savedSentences.forEach(item => {
+    notes.forEach(item => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'saved-sentence-item';
         itemDiv.dataset.id = item.id;
@@ -379,19 +442,19 @@ function displaySavedSentences() {
         const speakBtn = document.createElement('button');
         speakBtn.className = 'action-button speak-action';
         speakBtn.textContent = '▶️';
-        speakBtn.addEventListener('click', () => speakSavedSentence(item.text));
+        speakBtn.addEventListener('click', () => speakNote(item.text));
         
         // 読み込みボタン
         const loadBtn = document.createElement('button');
         loadBtn.className = 'action-button load-action';
         loadBtn.textContent = '✏️';
-        loadBtn.addEventListener('click', () => loadSavedSentence(item));
+        loadBtn.addEventListener('click', () => loadNote(item));
         
         // 削除ボタン
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'action-button delete-action';
         deleteBtn.textContent = '❌';
-        deleteBtn.addEventListener('click', () => deleteSavedSentenceById(item.id));
+        deleteBtn.addEventListener('click', () => deleteNoteById(item.id));
         
         actionsDiv.appendChild(speakBtn);
         actionsDiv.appendChild(loadBtn);
@@ -402,15 +465,18 @@ function displaySavedSentences() {
         
         listContainer.appendChild(itemDiv);
     });
+    
+    // 編集中のアイテムをハイライト
+    EditingState.updateSavedSentenceHighlight();
 }
 
-// 保存済み文を読み上げる関数
-function speakSavedSentence(text) {
+// ノートを読み上げる関数
+function speakNote(text) {
     speakMultipleLines(text);
 }
 
-// 保存済み文を入力エリアに読み込む関数
-function loadSavedSentence(item) {
+// ノートを入力エリアに読み込む関数
+function loadNote(item) {
     englishInput.value = item.text;
     englishInput.focus();
     
@@ -423,13 +489,24 @@ function loadSavedSentence(item) {
         translationLines = [];
         translationText.value = '';
     }
+    
+    // 編集状態を開始
+    EditingState.startEditing(item.id);
 }
 
-// 保存済み文を削除する関数（UI用）
-function deleteSavedSentenceById(id) {
-    if (confirm('この文を削除しますか？')) {
-        deleteSavedSentence(id);
-        displaySavedSentences(); // 一覧を更新
+// ノートを削除する関数（UI用）
+function deleteNoteById(id) {
+    if (confirm('このノートを削除しますか？')) {
+        // 削除するアイテムが編集中の場合は編集状態をリセット
+        if (currentEditingId === id) {
+            EditingState.startNew();
+            englishInput.value = '';
+            translationText.value = '';
+            translationLines = [];
+        }
+        
+        deleteNote(id);
+        displayNotes(); // 一覧を更新
     }
 }
 
@@ -437,31 +514,43 @@ function deleteSavedSentenceById(id) {
 saveButton.addEventListener('click', () => {
     const text = englishInput.value;
     // 現在の翻訳も一緒に保存
-    if (saveSentence(text, translationLines)) {
-        alert('保存しました！');
-        displaySavedSentences(); // 一覧を更新
+    const result = saveNote(text, translationLines);
+    if (result === 'updated') {
+        alert(UI_STRINGS.UPDATED);
+        displayNotes(); // 一覧を更新
+    } else if (result === 'saved') {
+        alert(UI_STRINGS.SAVED_NEW);
+        displayNotes(); // 一覧を更新
     }
+    // falseの場合は既にsaveNote内でアラートが表示される
 });
 
-// クリアボタンクリックイベント
+// 新規作成ボタンクリックイベント（旧クリアボタン）
 clearButton.addEventListener('click', () => {
-    // 入力内容がある場合のみ確認ダイアログを表示
-    if (englishInput.value.trim() || translationText.value.trim()) {
-        if (confirm('入力内容をクリアしてもよろしいですか？')) {
+    // 入力内容や編集状態がある場合のみ確認ダイアログを表示
+    const hasContent = englishInput.value.trim() || translationText.value.trim();
+    const isEditing = currentEditingId !== null;
+    
+    if (hasContent || isEditing) {
+        const message = isEditing ? '編集中の内容を破棄して新規作成しますか？' : '入力内容をクリアして新規作成しますか？';
+        if (confirm(message)) {
             englishInput.value = '';
             translationText.value = '';
             translationLines = [];
+            EditingState.startNew(); // 編集状態をリセット
             englishInput.focus();
         }
     } else {
-        // 既に空の場合は確認なしでフォーカスのみ
+        // 既に空で編集状態でもない場合は確認なしでフォーカスのみ
+        EditingState.startNew(); // UIを確実に更新
         englishInput.focus();
     }
 });
 
-// ページ読み込み時に保存済み文を表示
+// ページ読み込み時にノートを表示
 document.addEventListener('DOMContentLoaded', () => {
-    displaySavedSentences();
+    displayNotes();
+    EditingState.startNew(); // UIを初期状態に設定
 });
 
 // 直前の単語を取得する関数

@@ -182,7 +182,7 @@ h1 {
     transform: translateY(1px);
 }
 
-/* 保存済み文一覧 */
+/* ノート一覧 */
 #saved-sentences-container {
     max-width: none;
     margin: 20px 0 0;
@@ -221,6 +221,24 @@ h1 {
 
 .saved-sentence-item:hover {
     background: #e9ecef;
+}
+
+.saved-sentence-item.editing {
+    background: #e8f4f8;
+    border-color: #3498db;
+    border-width: 2px;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.saved-sentence-item.editing .sentence-text {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.saved-sentence-item.editing .sentence-translation {
+    color: #34495e;
+    border-left-color: #3498db;
+    border-left-width: 5px;
 }
 
 .sentence-content {
@@ -297,7 +315,7 @@ h1 {
     background-color: #c0392b;
 }
 
-.no-saved-sentences {
+.no-notes {
     text-align: center;
     color: #666;
     font-style: italic;
