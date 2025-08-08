@@ -47,7 +47,7 @@ const SPEECH_CONFIG = {
 
 // Web Speech APIの確認
 if (!('speechSynthesis' in window)) {
-    alert('お使いのブラウザは音声合成に対応していません。');
+    Toast.error('お使いのブラウザは音声合成に対応していません。');
 }
 
 // 音声合成用のUtteranceを作成する共通関数
@@ -117,7 +117,7 @@ function speakEnglish(text, isQuestion = false) {
 function speakJapanese(text) {
     // 空文字の場合は処理しない
     if (!text.trim()) {
-        alert('翻訳テキストがありません。まず翻訳ボタンを押してください。');
+        Toast.info('翻訳テキストがありません。まず翻訳ボタンを押してください。');
         return;
     }
 
@@ -172,7 +172,7 @@ const TranslationState = {
     handleError: (error, showAlert = true) => {
         console.error('Translation error:', error);
         if (showAlert) {
-            alert(UI_STRINGS.TRANSLATION_ERROR);
+            Toast.error(UI_STRINGS.TRANSLATION_ERROR);
         }
         TranslationState.finish();
     }
@@ -212,6 +212,41 @@ const EditingState = {
             }
         }
     }
+};
+
+// トースト通知システム
+const Toast = {
+    show: (message, type = 'info', duration = 3000) => {
+        const container = document.getElementById('toast-container');
+        
+        // トースト要素を作成
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        
+        // コンテナに追加
+        container.appendChild(toast);
+        
+        // アニメーション開始
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+        
+        // 自動削除
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (container.contains(toast)) {
+                    container.removeChild(toast);
+                }
+            }, 300);
+        }, duration);
+    },
+    
+    success: (message, duration = 3000) => Toast.show(message, 'success', duration),
+    error: (message, duration = 4000) => Toast.show(message, 'error', duration),
+    info: (message, duration = 3000) => Toast.show(message, 'info', duration),
+    warning: (message, duration = 3500) => Toast.show(message, 'warning', duration)
 };
 
 // Google翻訳APIを使用した翻訳関数
@@ -292,7 +327,7 @@ translateButton.addEventListener('click', async () => {
             }
         } else {
             // Google Apps Script URLが設定されていない場合
-            alert(UI_STRINGS.API_NOT_SET);
+            Toast.warning(UI_STRINGS.API_NOT_SET);
             TranslationState.finish();
             return;
         }
@@ -348,7 +383,7 @@ function saveNote(text, translations = null) {
         
         // 翻訳内容が同じ場合のみ重複エラー
         if (JSON.stringify(existingTranslations) === JSON.stringify(cleanTranslations)) {
-            alert('このノートは既に保存されています。');
+            Toast.info('このノートは既に保存されています。');
             return false;
         }
         
@@ -381,7 +416,7 @@ function saveNote(text, translations = null) {
     }
     
     // localStorageに保存
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedSentences));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
     
     return 'saved';
 }
@@ -519,10 +554,10 @@ saveButton.addEventListener('click', () => {
     // 現在の翻訳も一緒に保存
     const result = saveNote(text, translationLines);
     if (result === 'updated') {
-        alert(UI_STRINGS.UPDATED);
+        Toast.success(UI_STRINGS.UPDATED);
         displayNotes(); // 一覧を更新
     } else if (result === 'saved') {
-        alert(UI_STRINGS.SAVED_NEW);
+        Toast.success(UI_STRINGS.SAVED_NEW);
         displayNotes(); // 一覧を更新
     }
     // falseの場合は既にsaveNote内でアラートが表示される
