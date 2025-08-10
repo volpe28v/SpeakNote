@@ -2,12 +2,12 @@
 import './style.css'
 import { AuthManager, FirestoreManager } from './lib/firebase'
 import { toast } from './lib/toast'
-import { checkSpeechSynthesisSupport, speakJapanese, speakMultipleLines } from './lib/speech'
-import { APP_VERSION, UI_STRINGS } from './config/constants'
+import { UI_STRINGS } from './config/constants'
 import { TranslationManager } from './managers/TranslationManager'
 import { NoteManager } from './managers/NoteManager'
 import { AuthUIManager } from './managers/AuthUIManager'
 import { InputManager } from './managers/InputManager'
+import { UIController } from './managers/UIController'
 import type { Note, DOMElements } from './types'
 
 // Firebase関連のグローバル変数
@@ -20,30 +20,14 @@ let translationManager: TranslationManager
 let noteManager: NoteManager
 let authUIManager: AuthUIManager
 let inputManager: InputManager
+let uiController: UIController
 
-// DOM要素の取得
-function getDOMElements(): DOMElements {
-  return {
-    englishInput: document.getElementById('english-input') as HTMLTextAreaElement,
-    speakButton: document.getElementById('speak-button') as HTMLButtonElement,
-    translateButton: document.getElementById('translate-button') as HTMLButtonElement,
-    translationText: document.getElementById('translation-text') as HTMLTextAreaElement,
-    saveButton: document.getElementById('save-button') as HTMLButtonElement,
-    speakJapaneseButton: document.getElementById('speak-japanese-button') as HTMLButtonElement,
-    clearButton: document.getElementById('clear-button') as HTMLButtonElement,
-    loginButton: document.getElementById('login-button') as HTMLButtonElement,
-    userInfo: document.getElementById('user-info') as HTMLDivElement,
-    userAvatar: document.getElementById('user-avatar') as HTMLImageElement,
-    userName: document.getElementById('user-name') as HTMLSpanElement,
-    logoutButton: document.getElementById('logout-button') as HTMLButtonElement,
-    loginRequiredMessage: document.getElementById('login-required-message') as HTMLDivElement,
-    loginPromptButton: document.getElementById('login-prompt-button') as HTMLButtonElement,
-    notebookContainer: document.getElementById('notebook-container') as HTMLDivElement,
-    savedSentencesContainer: document.getElementById('saved-sentences-container') as HTMLDivElement
-  }
-}
+// DOM要素の取得（削除 - UIControllerに移行済み）
 
 let elements: DOMElements
+
+// EditingState オブジェクト - UIControllerで動的に作成
+let EditingState: any
 
 // Firebase初期化とUI更新（削除 - AuthUIManagerに移行済み）
 // 認証UI更新（削除 - AuthUIManagerに移行済み）
@@ -72,7 +56,10 @@ async function syncFromFirestoreWithManagers(authMgr: AuthManager, firestoreMgr:
           }
         }
       )
-      EditingState.updateSavedSentenceHighlight()
+      // EditingStateが初期化されている場合のみ実行
+      if (EditingState) {
+        EditingState.updateSavedSentenceHighlight()
+      }
     },
     (latestNote) => {
       loadNote(latestNote)
@@ -100,17 +87,42 @@ async function initialize() {
   console.log('Initializing application...')
   
   try {
-    elements = getDOMElements()
+    // Initialize managers
     translationManager = TranslationManager.getInstance()
     noteManager = NoteManager.getInstance()
     authUIManager = AuthUIManager.getInstance()
     inputManager = InputManager.getInstance()
+    uiController = UIController.getInstance()
+    
+    // Get DOM elements
+    elements = uiController.getDOMElements()
     console.log('DOM elements obtained:', elements)
     
-    // Check Web Speech API
-    if (!checkSpeechSynthesisSupport()) {
-      toast.error('お使いのブラウザは音声合成に対応していません。')
-    }
+    // Create EditingState object
+    EditingState = uiController.createEditingState(
+      elements,
+      () => noteManager.getCurrentEditingId(),
+      (id: number | null) => noteManager.setCurrentEditingId(id)
+    )
+    
+    // Initialize UI
+    uiController.initialize(
+      elements,
+      () => translationManager.handleTranslate(
+        elements.englishInput,
+        elements.translationText,
+        elements.translateButton
+      ),
+      handleSave,
+      handleClear,
+      () => inputManager.setupKeyboardEvents(elements, async () => {
+        await translationManager.performAutoTranslation(
+          elements.englishInput,
+          elements.translationText,
+          elements.translateButton
+        )
+      })
+    )
     
     // Initialize Firebase
     const firebaseResult = await authUIManager.initializeFirebase(elements, (user, authMgr, firestoreMgr) => {
@@ -138,17 +150,10 @@ async function initialize() {
       })
     }
     
-    EditingState.startNew() // UIを初期状態に設定
+    // UIを初期状態に設定
+    EditingState.startNew()
     
-    // Update version display dynamically
-    const versionElement = document.querySelector('.version')
-    if (versionElement) {
-      versionElement.textContent = `ver${APP_VERSION}`
-    }
-    
-    // Set up event listeners
-    setupEventListeners()
-    console.log('Event listeners setup completed')
+    console.log('Application initialization completed')
   } catch (error) {
     console.error('Initialization error:', error)
   }
@@ -163,80 +168,7 @@ if (document.readyState === 'loading') {
   initialize()
 }
 
-function setupEventListeners(): void {
-  console.log('Setting up event listeners...')
-  console.log('Elements:', elements)
-  
-  // 音声ボタン
-  if (elements.speakButton) {
-    elements.speakButton.addEventListener('click', () => {
-      console.log('Speak button clicked')
-      const text = elements.englishInput.value
-      console.log('Text to speak:', text)
-      speakMultipleLines(text)
-    })
-  } else {
-    console.error('Speak button not found')
-  }
-  
-  // 日本語読上げボタン
-  if (elements.speakJapaneseButton) {
-    elements.speakJapaneseButton.addEventListener('click', () => {
-      console.log('Japanese speak button clicked')
-      const japaneseText = elements.translationText.value
-      if (!japaneseText.trim()) {
-        toast.info('No translation available. Please translate first.')
-        return
-      }
-      speakJapanese(japaneseText)
-    })
-  } else {
-    console.error('Japanese speak button not found')
-  }
-  
-  // 翻訳ボタン
-  if (elements.translateButton) {
-    elements.translateButton.addEventListener('click', () => {
-      console.log('Translate button clicked')
-      translationManager.handleTranslate(
-        elements.englishInput,
-        elements.translationText,
-        elements.translateButton
-      )
-    })
-  } else {
-    console.error('Translate button not found')
-  }
-  
-  // 保存ボタン
-  if (elements.saveButton) {
-    elements.saveButton.addEventListener('click', () => {
-      console.log('Save button clicked')
-      handleSave()
-    })
-  } else {
-    console.error('Save button not found')
-  }
-  
-  // クリアボタン
-  if (elements.clearButton) {
-    elements.clearButton.addEventListener('click', () => {
-      console.log('Clear button clicked')
-      handleClear()
-    })
-  } else {
-    console.error('Clear button not found')
-  }
-  
-  // キーボードイベントの設定
-  inputManager.setupKeyboardEvents(elements, async () => {
-    await translationManager.performAutoTranslation(
-      elements.englishInput,
-      elements.translationText,
-      elements.translateButton
-    )
-  })
-}
+// イベントリスナーのセットアップ（削除 - UIControllerに移行済み）
 
 // 翻訳処理（削除 - TranslationManagerに移行済み）
 // Google翻訳API関数（削除 - TranslationManagerに移行済み）
@@ -274,7 +206,9 @@ async function handleSave(): Promise<void> {
         toast.success(UI_STRINGS.SAVED_NEW)
         // 保存後は編集状態に切り替え
         noteManager.setCurrentEditingId(result.id)
-        EditingState.updateUI()
+        if (EditingState) {
+          EditingState.updateUI()
+        }
       }
       
       // ノート一覧を更新（Firebase必須のため常にFirestoreから同期）
@@ -295,7 +229,9 @@ function handleClear(): void {
   translationManager.clearTranslationLines()
   
   // 編集状態を新規作成状態に切り替え
-  EditingState.startNew()
+  if (EditingState) {
+    EditingState.startNew()
+  }
   
   // フォーカスを英語入力欄に設定
   elements.englishInput.focus()
@@ -308,6 +244,11 @@ function handleClear(): void {
 
 // ノートを入力エリアに読み込む関数
 function loadNote(item: Note): void {
+  if (!EditingState) {
+    console.warn('EditingState not initialized yet')
+    return
+  }
+  
   noteManager.loadNote(
     item,
     elements.englishInput,
@@ -323,40 +264,3 @@ function loadNote(item: Note): void {
 
 // 翻訳表示を更新する関数（削除 - TranslationManagerに移行済み）
 // キーボードイベントハンドラー（削除 - InputManagerに移行済み）
-
-// EditingState オブジェクト
-const EditingState = {
-  startEditing: (itemId: number) => {
-    noteManager.setCurrentEditingId(itemId)
-    EditingState.updateUI()
-    EditingState.updateSavedSentenceHighlight()
-  },
-  
-  startNew: () => {
-    noteManager.setCurrentEditingId(null)
-    EditingState.updateUI()
-    EditingState.updateSavedSentenceHighlight()
-  },
-  
-  updateUI: () => {
-    const isEditing = noteManager.getCurrentEditingId() !== null
-    elements.saveButton.textContent = isEditing ? UI_STRINGS.SAVE_UPDATE : UI_STRINGS.SAVE_NEW
-    elements.clearButton.textContent = UI_STRINGS.NEW_NOTE
-  },
-  
-  updateSavedSentenceHighlight: () => {
-    // 全てのノートのハイライトをリセット
-    document.querySelectorAll('.saved-sentence-item').forEach(item => {
-      item.classList.remove('editing')
-    })
-    
-    // 編集中のアイテムがあればハイライト
-    const currentEditingId = noteManager.getCurrentEditingId()
-    if (currentEditingId) {
-      const editingItem = document.querySelector(`[data-id="${currentEditingId}"]`)
-      if (editingItem) {
-        editingItem.classList.add('editing')
-      }
-    }
-  }
-}
