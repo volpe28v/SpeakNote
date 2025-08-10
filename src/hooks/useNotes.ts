@@ -7,6 +7,7 @@ interface UseNotesReturn {
   notes: Note[]
   currentEditingId: number | null
   hasAutoLoadedLatestNote: boolean
+  isSaving: boolean
   saveNote: (text: string, translations: string[], authManager: AuthManager, firestoreManager: FirestoreManager) => Promise<SaveResult | false>
   deleteNote: (id: number, authManager: AuthManager, firestoreManager: FirestoreManager) => Promise<void>
   loadNote: (note: Note, onEditingStart: (id: number) => void) => Note
@@ -20,6 +21,7 @@ export function useNotes(): UseNotesReturn {
   const [notes, setNotes] = useState<Note[]>([])
   const [currentEditingId, setCurrentEditingId] = useState<number | null>(null)
   const [hasAutoLoadedLatestNote, setHasAutoLoadedLatestNote] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   const saveNote = useCallback(async (
     text: string, 
@@ -36,6 +38,12 @@ export function useNotes(): UseNotesReturn {
       setTimeout(() => toast.error('Please login to save notes'), 100)
       return false
     }
+
+    if (isSaving) {
+      return false
+    }
+    
+    setIsSaving(true)
     
     try {
       const noteData: Note = {
@@ -56,8 +64,10 @@ export function useNotes(): UseNotesReturn {
       console.error('Firestore save error:', error)
       setTimeout(() => toast.error('Save failed. Please try again.'), 100)
       return false
+    } finally {
+      setIsSaving(false)
     }
-  }, [currentEditingId])
+  }, [currentEditingId, isSaving])
 
   const deleteNote = useCallback(async (
     id: number,
@@ -127,6 +137,7 @@ export function useNotes(): UseNotesReturn {
     notes,
     currentEditingId,
     hasAutoLoadedLatestNote,
+    isSaving,
     saveNote,
     deleteNote,
     loadNote,

@@ -7,7 +7,7 @@ function NotebookContainer() {
   const { auth, translation, notes, input } = useApp()
   const { user, authManager, firestoreManager } = auth
   const { translationLines, isTranslating, handleTranslate, setTranslationLines, clearTranslationLines } = translation
-  const { saveNote, setCurrentEditingId, syncFromFirestore } = notes
+  const { isSaving, saveNote, setCurrentEditingId, syncFromFirestore } = notes
   const { handleKeyboardEvent } = input
 
   const [englishText, setEnglishText] = useState('')
@@ -113,9 +113,9 @@ function NotebookContainer() {
             <button 
               id="save-button"
               onClick={handleSave}
-              disabled={disabled || !englishText.trim()}
+              disabled={disabled || !englishText.trim() || isSaving}
             >
-              Save
+              {isSaving ? 'Saving...' : 'Save'}
             </button>
             <button 
               id="clear-button"
