@@ -22,19 +22,10 @@ let authUIManager: AuthUIManager
 let inputManager: InputManager
 let uiController: UIController
 
-// DOM要素の取得（削除 - UIControllerに移行済み）
-
 let elements: DOMElements
-
-// EditingState オブジェクト - UIControllerで動的に作成
 let EditingState: any
 
-// Firebase初期化とUI更新（削除 - AuthUIManagerに移行済み）
-// 認証UI更新（削除 - AuthUIManagerに移行済み）
-// アプリ機能有効化・無効化（削除 - AuthUIManagerに移行済み）
-// ログイン・ログアウト処理（削除 - AuthUIManagerに移行済み）
-
-// Firestoreとの同期（読み込み） - 引数でmanagerを受け取るバージョン
+// Firestoreとの同期（引数でmanagerを受け取るバージョン）
 async function syncFromFirestoreWithManagers(authMgr: AuthManager, firestoreMgr: FirestoreManager): Promise<void> {
   await noteManager.syncFromFirestore(
     authMgr,
@@ -67,7 +58,7 @@ async function syncFromFirestoreWithManagers(authMgr: AuthManager, firestoreMgr:
   )
 }
 
-// Firestoreとの同期（読み込み） - グローバル変数を使うバージョン（既存コード互換性のため）
+// Firestoreとの同期（グローバル変数を使うバージョン）
 async function syncFromFirestore(): Promise<void> {
   if (!authManager || !firestoreManager) {
     console.warn('Firebase managers not initialized yet')
@@ -77,12 +68,7 @@ async function syncFromFirestore(): Promise<void> {
   await syncFromFirestoreWithManagers(authManager, firestoreManager)
 }
 
-// 注意: 以下のlocalStorage関数はローカル→Firebase移行時のマイグレーション用として保持（削除 - AuthUIManagerに移行済み）
-
-// 残りの関数は元のscript.jsから移植
-// ... (続く)
-
-// Initialization function
+// 初期化関数
 async function initialize() {
   console.log('Initializing application...')
   
@@ -257,10 +243,3 @@ function loadNote(item: Note): void {
     EditingState.startEditing
   )
 }
-
-// getCurrentLineNumber関数は削除（一括翻訳により不要）
-
-// ヘルパー関数（削除 - InputManagerに移行済み）
-
-// 翻訳表示を更新する関数（削除 - TranslationManagerに移行済み）
-// キーボードイベントハンドラー（削除 - InputManagerに移行済み）
