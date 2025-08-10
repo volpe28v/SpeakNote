@@ -215,7 +215,7 @@ h1 {
     border: none;
     padding: 0;
     margin-bottom: 15px;
-    font-size: 18px;
+    font-size: 22px;
     line-height: 1.6; /* 自然な行間 */
     color: #555;
     font-style: italic;
@@ -231,7 +231,7 @@ h1 {
 #english-input {
     width: 100%;
     padding: 0;
-    font-size: 20px;
+    font-size: 22px;
     border: none;
     outline: none;
     font-family: 'Georgia', 'Times New Roman', serif;
@@ -571,7 +571,7 @@ h1 {
     }
     
     #english-input, #translation-text {
-        font-size: 17px;
+        font-size: 22px;
         line-height: 1.5; /* モバイル用の自然な行間 */
     }
     
@@ -580,9 +580,7 @@ h1 {
         margin-bottom: 15px;
     }
     
-    #english-input {
-        font-size: 22px; /* iOS で拡大されるのを防ぐ */
-    }
+    /* 上記で統一設定済みのため削除 */
     
     #saved-sentences-container {
         margin-top: 15px;
