@@ -3,18 +3,14 @@ import './style.css'
 import { AuthManager, FirestoreManager } from './lib/firebase'
 import { toast } from './lib/toast'
 import { checkSpeechSynthesisSupport, speakEnglish, speakJapanese, speakMultipleLines, createUtterance, SPEECH_CONFIG } from './lib/speech'
-import type { Note, SaveResult, DOMElements, UIStrings } from './types'
-
-// アプリケーションのバージョン
-const APP_VERSION = '1.1.0'
+import { APP_VERSION, UI_STRINGS } from './config/constants'
+import { TranslationManager } from './managers/TranslationManager'
+import type { Note, SaveResult, DOMElements } from './types'
 
 // Firebase関連のグローバル変数
 let authManager: AuthManager | null = null
 let firestoreManager: FirestoreManager | null = null
 let isFirebaseReady = false
-
-// Translation history array
-let translationLines: string[] = []
 
 // Currently editing item ID (for update saves)
 let currentEditingId: number | null = null
@@ -22,27 +18,8 @@ let currentEditingId: number | null = null
 // Flag to track if latest note has been auto-loaded in this session
 let hasAutoLoadedLatestNote = false
 
-// Firebase必須のため、ローカルストレージの定数は不要
-
-// Google Apps Script translation API URL
-const GAS_TRANSLATE_URL = 'https://script.google.com/macros/s/AKfycbyTSE6S8wnGYDQhQ3gKeVwIiDt3uwlxZoUBFfJ3YCrc1dCn76sQR3YJ5bM2vsuVEboc/exec'
-
-// Translation state management
-let isTranslating = false
-
-// UI text strings
-const UI_STRINGS: UIStrings = {
-  TRANSLATING: 'Translating...',
-  TRANSLATING_PROGRESS: (current: number, total: number) => `Translating... (${current}/${total})`,
-  TRANSLATE: 'Translate',
-  TRANSLATION_ERROR: 'Translation error occurred',
-  API_NOT_SET: 'Translation API is not configured. Please check README.md for Google Apps Script setup.',
-  SAVE_NEW: 'Save',
-  SAVE_UPDATE: 'Update',
-  NEW_NOTE: 'New',
-  SAVED_NEW: 'Saved!',
-  UPDATED: 'Updated!'
-}
+// Translation manager instance
+let translationManager: TranslationManager
 
 // DOM要素の取得
 function getDOMElements(): DOMElements {
@@ -163,7 +140,7 @@ function disableAppFunctions(): void {
   // 入力内容をクリア
   elements.englishInput.value = ''
   elements.translationText.value = ''
-  translationLines = []
+  translationManager.clearTranslationLines()
   
   // 編集状態とフラグをリセット
   currentEditingId = null
@@ -240,6 +217,7 @@ async function initialize() {
   
   try {
     elements = getDOMElements()
+    translationManager = TranslationManager.getInstance()
     console.log('DOM elements obtained:', elements)
     
     // Check Web Speech API
@@ -315,7 +293,11 @@ function setupEventListeners(): void {
   if (elements.translateButton) {
     elements.translateButton.addEventListener('click', () => {
       console.log('Translate button clicked')
-      handleTranslate()
+      translationManager.handleTranslate(
+        elements.englishInput,
+        elements.translationText,
+        elements.translateButton
+      )
     })
   } else {
     console.error('Translate button not found')
@@ -350,87 +332,13 @@ function setupEventListeners(): void {
   }
 }
 
-// 翻訳処理
-async function handleTranslate(): Promise<void> {
-  const input = elements.englishInput.value
-  
-  // 完全に空の場合のみエラー
-  if (!input.trim()) {
-    toast.info('Please enter English text')
-    return
-  }
-  
-  if (isTranslating) {
-    return // 既に翻訳中の場合は何もしない
-  }
-  
-  // 翻訳APIが設定されていない場合
-  if (!GAS_TRANSLATE_URL) {
-    toast.warning(UI_STRINGS.API_NOT_SET)
-    return
-  }
-  
-  // 翻訳開始
-  isTranslating = true
-  elements.translateButton.disabled = true
-  elements.translateButton.textContent = UI_STRINGS.TRANSLATING
-  elements.translateButton.style.opacity = '0.6'
-  
-  try {
-    // 元のテキストを改行を保持したまま処理
-    const originalText = elements.englishInput.value // trimしない（空行保持のため）
-    
-    // 一括翻訳を実行
-    const translatedText = await translateWithGoogleAPI(originalText)
-    
-    // 翻訳結果を行ごとに分割して保存
-    translationLines = translatedText.split('\n')
-    
-    // 翻訳結果を表示
-    elements.translationText.value = translatedText
-    
-    toast.success('Translation completed')
-  } catch (error) {
-    console.error('Translation error:', error)
-    toast.error(UI_STRINGS.TRANSLATION_ERROR)
-  } finally {
-    // 翻訳終了
-    isTranslating = false
-    elements.translateButton.disabled = false
-    elements.translateButton.textContent = UI_STRINGS.TRANSLATE
-    elements.translateButton.style.opacity = '1'
-  }
-}
-
-// Google翻訳APIを使用した翻訳関数
-async function translateWithGoogleAPI(text: string): Promise<string> {
-  if (!GAS_TRANSLATE_URL) {
-    console.warn('Google Apps Script URL not configured')
-    return 'Translation API not configured'
-  }
-
-  try {
-    const response = await fetch(
-      `${GAS_TRANSLATE_URL}?text=${encodeURIComponent(text)}&source=en&target=ja`
-    )
-    const data = await response.json()
-    
-    if (data.success) {
-      return data.text
-    } else {
-      console.error('Translation API error:', data.error)
-      return 'Translation error: ' + data.error
-    }
-  } catch (error) {
-    console.error('Network error:', error)
-    return 'Network error: Translation failed'
-  }
-}
+// 翻訳処理（削除 - TranslationManagerに移行済み）
+// Google翻訳API関数（削除 - TranslationManagerに移行済み）
 
 // 保存処理
 async function handleSave(): Promise<void> {
   const englishText = elements.englishInput.value.trim()
-  const translationsArray = translationLines
+  const translationsArray = translationManager.getTranslationLines()
   
   if (!englishText) {
     toast.info('Please enter English text')
@@ -502,7 +410,7 @@ async function saveNote(text: string, translations: string[] = []): Promise<Save
 function handleClear(): void {
   elements.englishInput.value = ''
   elements.translationText.value = ''
-  translationLines = []
+  translationManager.clearTranslationLines()
   
   // 編集状態を新規作成状態に切り替え
   EditingState.startNew()
@@ -622,11 +530,11 @@ function loadNote(item: Note): void {
   
   // 保存された翻訳がある場合は表示
   if (item.translations && item.translations.length > 0) {
-    translationLines = item.translations
-    updateTranslationDisplay()
+    translationManager.setTranslationLines(item.translations)
+    translationManager.updateTranslationDisplay(elements.translationText)
   } else {
     // 翻訳がない場合はクリア
-    translationLines = []
+    translationManager.clearTranslationLines()
     elements.translationText.value = ''
   }
   
@@ -650,10 +558,7 @@ function getLastWord(text: string): string {
   return words[words.length - 1] || ''
 }
 
-// 翻訳表示を更新する関数
-function updateTranslationDisplay(): void {
-  elements.translationText.value = translationLines.join('\n')
-}
+// 翻訳表示を更新する関数（削除 - TranslationManagerに移行済み）
 
 // キーボードイベントハンドラー
 async function handleKeyboardEvents(event: KeyboardEvent): Promise<void> {
@@ -666,35 +571,11 @@ async function handleKeyboardEvents(event: KeyboardEvent): Promise<void> {
       speakEnglish(currentLine.trim(), false)
       
       // 自動的に全文を翻訳
-      if (GAS_TRANSLATE_URL && !isTranslating) {
-        // 翻訳中の状態を表示
-        isTranslating = true
-        elements.translateButton.disabled = true
-        elements.translateButton.textContent = UI_STRINGS.TRANSLATING
-        elements.translateButton.style.opacity = '0.6'
-        
-        try {
-          // 全文を一括翻訳
-          const fullText = elements.englishInput.value
-          if (fullText.trim()) {
-            const translatedText = await translateWithGoogleAPI(fullText)
-            
-            // 翻訳結果を行ごとに分割して保存
-            translationLines = translatedText.split('\n')
-            
-            // 翻訳結果を表示
-            elements.translationText.value = translatedText
-          }
-        } catch (error) {
-          console.error('Auto translation error:', error)
-        } finally {
-          // 翻訳終了
-          isTranslating = false
-          elements.translateButton.disabled = false
-          elements.translateButton.textContent = UI_STRINGS.TRANSLATE
-          elements.translateButton.style.opacity = '1'
-        }
-      }
+      await translationManager.performAutoTranslation(
+        elements.englishInput,
+        elements.translationText,
+        elements.translateButton
+      )
     }
     // エンターキーは通常通り改行として動作
   } else if (event.key === ' ') {
