@@ -2,10 +2,12 @@
 import './style.css'
 import { AuthManager, FirestoreManager } from './lib/firebase'
 import { toast } from './lib/toast'
-import { checkSpeechSynthesisSupport, speakEnglish, speakJapanese, speakMultipleLines, createUtterance, SPEECH_CONFIG } from './lib/speech'
+import { checkSpeechSynthesisSupport, speakJapanese, speakMultipleLines } from './lib/speech'
 import { APP_VERSION, UI_STRINGS } from './config/constants'
 import { TranslationManager } from './managers/TranslationManager'
 import { NoteManager } from './managers/NoteManager'
+import { AuthUIManager } from './managers/AuthUIManager'
+import { InputManager } from './managers/InputManager'
 import type { Note, DOMElements } from './types'
 
 // Firebase関連のグローバル変数
@@ -16,6 +18,8 @@ let isFirebaseReady = false
 // Manager instances
 let translationManager: TranslationManager
 let noteManager: NoteManager
+let authUIManager: AuthUIManager
+let inputManager: InputManager
 
 // DOM要素の取得
 function getDOMElements(): DOMElements {
@@ -41,141 +45,16 @@ function getDOMElements(): DOMElements {
 
 let elements: DOMElements
 
-// Initialize FirebaseとUI更新
-async function initializeFirebase(): Promise<void> {
-  try {
-    authManager = new AuthManager()
-    firestoreManager = new FirestoreManager(authManager)
-    
-    // 認証状態の監視開始
-    await authManager.init()
-    
-    // 認証状態変更時のコールバック設定
-    authManager.onAuthStateChanged((user) => {
-      updateAuthUI(user)
-      if (user) {
-        // ログイン時にFirestoreからノートを読み込み
-        syncFromFirestore()
-      } else {
-        // ログアウト時は機能制限のためノート表示は無効化済み
-        disableAppFunctions()
-      }
-    })
-    
-    // ログイン・ログアウトボタンのイベントリスナー設定
-    elements.loginButton.addEventListener('click', handleLogin)
-    elements.logoutButton.addEventListener('click', handleLogout)
-    elements.loginPromptButton.addEventListener('click', handleLogin)
-    
-    isFirebaseReady = true
-  } catch (error) {
-    console.error('Firebase initialization error:', error)
-    toast.error('Firebase initialization failed')
-  }
-}
+// Firebase初期化とUI更新（削除 - AuthUIManagerに移行済み）
+// 認証UI更新（削除 - AuthUIManagerに移行済み）
+// アプリ機能有効化・無効化（削除 - AuthUIManagerに移行済み）
+// ログイン・ログアウト処理（削除 - AuthUIManagerに移行済み）
 
-// 認証UI更新
-function updateAuthUI(user: any): void {
-  if (user) {
-    // ログイン状態
-    elements.loginButton.style.display = 'none'
-    elements.userInfo.style.display = 'flex'
-    elements.userAvatar.src = user.photoURL || ''
-    elements.userName.textContent = user.displayName || 'ユーザー'
-    
-    // アプリ機能を有効化
-    enableAppFunctions()
-  } else {
-    // ログアウト状態
-    elements.loginButton.style.display = 'block'
-    elements.userInfo.style.display = 'none'
-    
-    // アプリ機能を無効化
-    disableAppFunctions()
-  }
-}
-
-// アプリ機能を有効化
-function enableAppFunctions(): void {
-  console.log('Enabling app functions...')
-  
-  if (!elements) {
-    console.error('Elements not initialized in enableAppFunctions')
-    return
-  }
-  
-  elements.loginRequiredMessage.style.display = 'none'
-  elements.notebookContainer.classList.remove('disabled-overlay')
-  elements.savedSentencesContainer.classList.remove('disabled-overlay')
-  
-  // 入力フィールドとボタンを有効化
-  elements.englishInput.disabled = false
-  elements.speakButton.disabled = false
-  elements.translateButton.disabled = false
-  elements.saveButton.disabled = false
-  elements.clearButton.disabled = false
-  elements.speakJapaneseButton.disabled = false
-  
-  console.log('App functions enabled')
-}
-
-// アプリ機能を無効化
-function disableAppFunctions(): void {
-  elements.loginRequiredMessage.style.display = 'flex'
-  elements.notebookContainer.classList.add('disabled-overlay')
-  elements.savedSentencesContainer.classList.add('disabled-overlay')
-  
-  // 入力フィールドとボタンを無効化
-  elements.englishInput.disabled = true
-  elements.speakButton.disabled = true
-  elements.translateButton.disabled = true
-  elements.saveButton.disabled = true
-  elements.clearButton.disabled = true
-  elements.speakJapaneseButton.disabled = true
-  
-  // 入力内容をクリア
-  elements.englishInput.value = ''
-  elements.translationText.value = ''
-  translationManager.clearTranslationLines()
-  
-  // 編集状態とフラグをリセット
-  noteManager.resetFlags()
-  
-  // ノート一覧に制限メッセージを表示
-  const listContainer = document.getElementById('saved-sentences-list')!
-  listContainer.innerHTML = '<div class="no-notes">Please login to view notes</div>'
-}
-
-// ログイン処理
-async function handleLogin(): Promise<void> {
-  if (!authManager) return
-  
-  try {
-    await authManager.signIn()
-    // ローカルストレージからの移行を提案
-    const localNotes = getNotes()
-    if (localNotes.length > 0) {
-      if (confirm(`Would you like to migrate ${localNotes.length} locally saved notes to cloud?`)) {
-        await firestoreManager!.migrateFromLocalStorage()
-        syncFromFirestore() // 移行後に再読み込み
-      }
-    }
-  } catch (error) {
-    console.error('Login error:', error)
-  }
-}
-
-// ログアウト処理
-async function handleLogout(): Promise<void> {
-  if (!authManager) return
-  await authManager.signOut()
-}
-
-// Firestoreとの同期（読み込み）
-async function syncFromFirestore(): Promise<void> {
+// Firestoreとの同期（読み込み） - 引数でmanagerを受け取るバージョン
+async function syncFromFirestoreWithManagers(authMgr: AuthManager, firestoreMgr: FirestoreManager): Promise<void> {
   await noteManager.syncFromFirestore(
-    authManager!,
-    firestoreManager!,
+    authMgr,
+    firestoreMgr,
     (cloudNotes) => {
       // Firestoreのデータを表示
       const listContainer = document.getElementById('saved-sentences-list')!
@@ -184,8 +63,8 @@ async function syncFromFirestore(): Promise<void> {
         listContainer,
         loadNote,
         async (id: number) => {
-          await noteManager.deleteNote(id, authManager!, firestoreManager!, isFirebaseReady)
-          await syncFromFirestore()
+          await noteManager.deleteNote(id, authMgr, firestoreMgr, isFirebaseReady)
+          await syncFromFirestoreWithManagers(authMgr, firestoreMgr)
           
           // 削除したアイテムが編集中だった場合はクリア
           if (noteManager.getCurrentEditingId() === id) {
@@ -201,10 +80,17 @@ async function syncFromFirestore(): Promise<void> {
   )
 }
 
-// 注意: 以下のlocalStorage関数はローカル→Firebase移行時のマイグレーション用として保持
-function getNotes(): Note[] {
-  return noteManager.getNotes()
+// Firestoreとの同期（読み込み） - グローバル変数を使うバージョン（既存コード互換性のため）
+async function syncFromFirestore(): Promise<void> {
+  if (!authManager || !firestoreManager) {
+    console.warn('Firebase managers not initialized yet')
+    return
+  }
+  
+  await syncFromFirestoreWithManagers(authManager, firestoreManager)
 }
+
+// 注意: 以下のlocalStorage関数はローカル→Firebase移行時のマイグレーション用として保持（削除 - AuthUIManagerに移行済み）
 
 // 残りの関数は元のscript.jsから移植
 // ... (続く)
@@ -217,6 +103,8 @@ async function initialize() {
     elements = getDOMElements()
     translationManager = TranslationManager.getInstance()
     noteManager = NoteManager.getInstance()
+    authUIManager = AuthUIManager.getInstance()
+    inputManager = InputManager.getInstance()
     console.log('DOM elements obtained:', elements)
     
     // Check Web Speech API
@@ -225,11 +113,29 @@ async function initialize() {
     }
     
     // Initialize Firebase
-    await initializeFirebase()
+    const firebaseResult = await authUIManager.initializeFirebase(elements, (user, authMgr, firestoreMgr) => {
+      if (user) {
+        // ログイン時にFirestoreからノートを読み込み
+        syncFromFirestoreWithManagers(authMgr, firestoreMgr)
+      } else {
+        // ログアウト時は機能制限のためノート表示は無効化済み
+        authUIManager.disableAppFunctions(elements, () => {
+          translationManager.clearTranslationLines()
+          noteManager.resetFlags()
+        })
+      }
+    })
+    
+    authManager = firebaseResult.authManager
+    firestoreManager = firebaseResult.firestoreManager
+    isFirebaseReady = firebaseResult.isReady
     
     // Firebase認証が必須 - 未ログインの場合は機能を無効化
-    if (!isFirebaseReady || !authManager!.getCurrentUser()) {
-      disableAppFunctions()
+    if (!isFirebaseReady || !authManager.getCurrentUser()) {
+      authUIManager.disableAppFunctions(elements, () => {
+        translationManager.clearTranslationLines()
+        noteManager.resetFlags()
+      })
     }
     
     EditingState.startNew() // UIを初期状態に設定
@@ -323,12 +229,13 @@ function setupEventListeners(): void {
   }
   
   // キーボードイベントの設定
-  if (elements.englishInput) {
-    elements.englishInput.addEventListener('keydown', handleKeyboardEvents)
-    console.log('Keyboard events registered')
-  } else {
-    console.error('English input not found for keyboard events')
-  }
+  inputManager.setupKeyboardEvents(elements, async () => {
+    await translationManager.performAutoTranslation(
+      elements.englishInput,
+      elements.translationText,
+      elements.translateButton
+    )
+  })
 }
 
 // 翻訳処理（削除 - TranslationManagerに移行済み）
@@ -345,11 +252,16 @@ async function handleSave(): Promise<void> {
   }
   
   try {
+    if (!authManager || !firestoreManager) {
+      toast.error('Firebase not initialized')
+      return
+    }
+    
     const result = await noteManager.saveNote(
       englishText,
       translationsArray,
-      authManager!,
-      firestoreManager!,
+      authManager,
+      firestoreManager,
       isFirebaseReady
     )
     
@@ -407,75 +319,10 @@ function loadNote(item: Note): void {
 
 // getCurrentLineNumber関数は削除（一括翻訳により不要）
 
-// ヘルパー関数：現在の行を取得
-function getCurrentLine(textarea: HTMLTextAreaElement): string {
-  const cursorPosition = textarea.selectionStart
-  const textBeforeCursor = textarea.value.substring(0, cursorPosition)
-  const lines = textBeforeCursor.split('\n')
-  return lines[lines.length - 1]
-}
-
-// ヘルパー関数：直前の単語を取得
-function getLastWord(text: string): string {
-  const words = text.trim().split(/\s+/)
-  return words[words.length - 1] || ''
-}
+// ヘルパー関数（削除 - InputManagerに移行済み）
 
 // 翻訳表示を更新する関数（削除 - TranslationManagerに移行済み）
-
-// キーボードイベントハンドラー
-async function handleKeyboardEvents(event: KeyboardEvent): Promise<void> {
-  if (event.key === 'Enter') {
-    // エンターキーが押される前に現在の行内容を取得
-    const currentLine = getCurrentLine(elements.englishInput)
-    
-    if (currentLine.trim()) {
-      // 現在行を文として発音
-      speakEnglish(currentLine.trim(), false)
-      
-      // 自動的に全文を翻訳
-      await translationManager.performAutoTranslation(
-        elements.englishInput,
-        elements.translationText,
-        elements.translateButton
-      )
-    }
-    // エンターキーは通常通り改行として動作
-  } else if (event.key === ' ') {
-    // スペースキーが押されたら現在行の直前の単語を発音（翻訳は更新しない）
-    const currentLine = getCurrentLine(elements.englishInput)
-    
-    // 句読点の直後かどうかをチェック
-    const lastChar = currentLine.slice(-1)
-    const isPunctuationBefore = /[.!?]/.test(lastChar)
-    
-    if (!isPunctuationBefore && currentLine.trim()) {
-      const lastWord = getLastWord(currentLine)
-      if (lastWord) {
-        // 単語のみを発音（翻訳は更新しない）
-        window.speechSynthesis.cancel()
-        let processedText = lastWord === 'I' ? 'i' : lastWord
-        const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-        window.speechSynthesis.speak(utterance)
-      }
-    }
-    // スペースは通常通り入力される
-  } else if (event.key === '.' || event.key === '?' || event.key === '!') {
-    // ピリオド、疑問符、感嘆符が押されたら、現在行を発音のみ（翻訳は更新しない）
-    const punctuation = event.key
-    setTimeout(() => {
-      const currentLine = getCurrentLine(elements.englishInput)
-      if (currentLine.trim()) {
-        // 疑問符の場合は疑問文として発音のみ
-        window.speechSynthesis.cancel()
-        let processedText = currentLine.trim()
-        const config = punctuation === '?' ? SPEECH_CONFIG.ENGLISH_QUESTION : SPEECH_CONFIG.ENGLISH
-        const utterance = createUtterance(processedText, config)
-        window.speechSynthesis.speak(utterance)
-      }
-    }, 50)
-  }
-}
+// キーボードイベントハンドラー（削除 - InputManagerに移行済み）
 
 // EditingState オブジェクト
 const EditingState = {
