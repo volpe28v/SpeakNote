@@ -22,9 +22,7 @@ let currentEditingId: number | null = null
 // Flag to track if latest note has been auto-loaded in this session
 let hasAutoLoadedLatestNote = false
 
-// Constants for save functionality
-const STORAGE_KEY = 'speakNote_savedSentences'
-const MAX_SAVED_ITEMS = 100
+// Firebase必須のため、ローカルストレージの定数は不要
 
 // Google Apps Script translation API URL
 const GAS_TRANSLATE_URL = 'https://script.google.com/macros/s/AKfycbyTSE6S8wnGYDQhQ3gKeVwIiDt3uwlxZoUBFfJ3YCrc1dCn76sQR3YJ5bM2vsuVEboc/exec'
@@ -224,14 +222,12 @@ async function syncFromFirestore(): Promise<void> {
   } catch (error) {
     console.error('Firestore sync error:', error)
     toast.error('Failed to sync from cloud')
-    // エラー時はローカルデータにフォールバック
-    displayNotes()
   }
 }
 
-// localStorage関連の関数（Firebaseバックアップ用として保持）
+// 注意: 以下のlocalStorage関数はローカル→Firebase移行時のマイグレーション用として保持
 function getNotes(): Note[] {
-  const saved = localStorage.getItem(STORAGE_KEY)
+  const saved = localStorage.getItem('speakNote_savedSentences')
   return saved ? JSON.parse(saved) : []
 }
 
@@ -254,8 +250,7 @@ async function initialize() {
     // Initialize Firebase
     await initializeFirebase()
     
-    // Initial display switches automatically based on auth state (handled in updateAuthUI)
-    // Disable functions initially if not logged in
+    // Firebase認証が必須 - 未ログインの場合は機能を無効化
     if (!isFirebaseReady || !authManager!.getCurrentUser()) {
       disableAppFunctions()
     }
@@ -467,12 +462,8 @@ async function handleSave(): Promise<void> {
         EditingState.updateUI()
       }
       
-      // ノート一覧を更新
-      if (isFirebaseReady && firestoreManager && authManager!.getCurrentUser()) {
-        await syncFromFirestore()
-      } else {
-        displayNotes()
-      }
+      // ノート一覧を更新（Firebase必須のため常にFirestoreから同期）
+      await syncFromFirestore()
     }
   } catch (error) {
     console.error('Save error:', error)
@@ -480,104 +471,41 @@ async function handleSave(): Promise<void> {
   }
 }
 
-// 保存処理の実装
+// 保存処理の実装（Firebase必須）
 async function saveNote(text: string, translations: string[] = []): Promise<SaveResult | false> {
   if (!text.trim()) return false
   
   const trimmedText = text.trim()
   const cleanTranslations = translations || []
   
-  // Firebaseが利用可能でログインしている場合
-  if (isFirebaseReady && firestoreManager && authManager!.getCurrentUser()) {
-    try {
-      const noteData: Note = {
-        id: currentEditingId || Date.now(),
-        text: trimmedText,
-        translations: cleanTranslations,
-        timestamp: new Date().toISOString()
-      }
-      
-      if (currentEditingId) {
-        // 更新処理
-        await firestoreManager.updateNote(noteData)
-        return { type: 'updated', id: currentEditingId }
-      } else {
-        // 新規作成処理
-        await firestoreManager.saveNote(noteData)
-        return { type: 'saved', id: noteData.id }
-      }
-    } catch (error) {
-      console.error('Firestore save error:', error)
-      toast.error('Cloud save failed. Saving locally.')
-      // Firestoreエラー時はlocalStorageにフォールバック
-    }
+  // Firebase認証が必要
+  if (!isFirebaseReady || !firestoreManager || !authManager!.getCurrentUser()) {
+    toast.error('Please login to save notes')
+    return false
   }
   
-  // ローカルストレージでの保存処理
-  const notes = getNotes()
-  
-  // 編集中のアイテムがある場合は更新処理
-  if (currentEditingId) {
-    const editingIndex = notes.findIndex(item => item.id === currentEditingId)
-    if (editingIndex !== -1) {
-      // 既存のアイテムを更新
-      notes[editingIndex] = {
-        ...notes[editingIndex],
-        text: trimmedText,
-        translations: cleanTranslations,
-        timestamp: new Date().toISOString()
-      }
-      
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes))
+  try {
+    const noteData: Note = {
+      id: currentEditingId || Date.now(),
+      text: trimmedText,
+      translations: cleanTranslations,
+      timestamp: new Date().toISOString()
+    }
+    
+    if (currentEditingId) {
+      // 更新処理
+      await firestoreManager.updateNote(noteData)
       return { type: 'updated', id: currentEditingId }
-    }
-  }
-  
-  // 新規作成の場合：重複チェック
-  const existingItem = notes.find(item => item.text === trimmedText)
-  if (existingItem) {
-    // 翻訳が同じかチェック
-    const existingTranslations = existingItem.translations || []
-    
-    // 翻訳内容が同じ場合のみ重複エラー
-    if (JSON.stringify(existingTranslations) === JSON.stringify(cleanTranslations)) {
-      toast.info('This note is already saved.')
-      return false
-    }
-    
-    // 翻訳が異なる場合は確認ダイアログを表示
-    if (confirm('Same English text but different translation. Overwrite with new translation?')) {
-      // 既存のアイテムを削除
-      const index = notes.findIndex(item => item.id === existingItem.id)
-      if (index !== -1) {
-        notes.splice(index, 1)
-      }
     } else {
-      return false
+      // 新規作成処理
+      await firestoreManager.saveNote(noteData)
+      return { type: 'saved', id: noteData.id }
     }
+  } catch (error) {
+    console.error('Firestore save error:', error)
+    toast.error('Save failed. Please try again.')
+    return false
   }
-  
-  // 新しいアイテムを作成
-  const newItem: Note = {
-    id: Date.now(),
-    text: trimmedText,
-    translations: cleanTranslations,
-    timestamp: new Date().toISOString()
-  }
-  
-  // 配列の先頭に追加
-  notes.unshift(newItem)
-  
-  // 最大数を超えた場合、古いものを削除
-  if (notes.length > MAX_SAVED_ITEMS) {
-    notes.splice(MAX_SAVED_ITEMS)
-  }
-  
-  // localStorageに保存
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes))
-  
-  // 新規作成時はIDを含めた結果を返す
-  return { type: 'saved', id: newItem.id }
 }
 
 // クリア処理
@@ -593,39 +521,23 @@ function handleClear(): void {
   elements.englishInput.focus()
 }
 
-// ノート削除処理
+// ノート削除処理（Firebase必須）
 async function deleteNote(id: number): Promise<void> {
-  // Firebaseが利用可能でログインしている場合
-  if (isFirebaseReady && firestoreManager && authManager!.getCurrentUser()) {
-    try {
-      await firestoreManager.deleteNote(id)
-      return
-    } catch (error) {
-      console.error('Firestore delete error:', error)
-      toast.error('Cloud delete failed. Deleting locally only.')
-    }
+  // Firebase認証が必要
+  if (!isFirebaseReady || !firestoreManager || !authManager!.getCurrentUser()) {
+    toast.error('Please login to delete notes')
+    return
   }
   
-  // ローカルストレージでの削除処理
-  const notes = getNotes()
-  const filtered = notes.filter(item => item.id !== id)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered))
+  try {
+    await firestoreManager.deleteNote(id)
+  } catch (error) {
+    console.error('Firestore delete error:', error)
+    toast.error('Delete failed. Please try again.')
+  }
 }
 
-// ローカルノート表示
-function displayNotes(): void {
-  const notes = getNotes()
-  const listContainer = document.getElementById('saved-sentences-list')!
-  displayNotesFromData(notes, listContainer)
-  
-  // 初回表示時のローカルでも最新ノートを自動選択（セッション中1回のみ）
-  if (notes.length > 0 && !currentEditingId && !hasAutoLoadedLatestNote) {
-    const latestNote = notes[0] // ノートは新しい順に並んでいる
-    loadNote(latestNote)
-    hasAutoLoadedLatestNote = true
-    toast.info('Latest note loaded automatically')
-  }
-}
+// displayNotes関数は削除（Firebase必須のためsyncFromFirestoreを使用）
 
 // 汎用的なノート表示関数
 function displayNotesFromData(notes: Note[], container: HTMLElement): void {
@@ -686,11 +598,8 @@ function displayNotesFromData(notes: Note[], container: HTMLElement): void {
       event.stopPropagation() // ノート選択イベントを防ぐ
       if (confirm('Delete this note?')) {
         await deleteNote(item.id)
-        if (isFirebaseReady && firestoreManager && authManager!.getCurrentUser()) {
-          await syncFromFirestore()
-        } else {
-          displayNotes()
-        }
+        // Firebase必須のため常にFirestoreから同期
+        await syncFromFirestore()
         
         // 削除したアイテムが編集中だった場合はクリア
         if (currentEditingId === item.id) {
