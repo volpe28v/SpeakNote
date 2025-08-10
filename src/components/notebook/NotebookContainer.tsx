@@ -4,7 +4,7 @@ import { speakEnglish, speakJapanese } from '../../lib/speech'
 import { toast } from '../../lib/toast'
 
 function NotebookContainer() {
-  const { auth, translation, notes, input } = useApp()
+  const { auth, translation, notes, input, unsavedChanges } = useApp()
   const { user, authManager, firestoreManager } = auth
   const {
     translationLines,
@@ -15,22 +15,36 @@ function NotebookContainer() {
   } = translation
   const { isSaving, saveNote, setCurrentEditingId, syncFromFirestore } = notes
   const { handleKeyboardEvent } = input
+  const { hasUnsavedChanges, markAsSaved, markAsModified } = unsavedChanges
 
   const [englishText, setEnglishText] = useState('')
   const [translationText, setTranslationText] = useState('')
+  const [originalContent, setOriginalContent] = useState('')
 
   useEffect(() => {
     setTranslationText(translationLines.join('\n'))
   }, [translationLines])
 
+  // 英語テキストの変更を監視して未保存状態を更新
+  useEffect(() => {
+    const hasChanges = englishText.trim() !== originalContent.trim()
+    if (hasChanges && englishText.trim()) {
+      markAsModified()
+    } else if (!hasChanges) {
+      markAsSaved()
+    }
+  }, [englishText, originalContent, markAsModified, markAsSaved])
+
   useEffect(() => {
     if (user && authManager && firestoreManager) {
       syncFromFirestore(authManager, firestoreManager, (note) => {
         setEnglishText(note.text)
+        setOriginalContent(note.text)
         if (note.translations) {
           setTranslationLines(note.translations)
         }
         setCurrentEditingId(note.id)
+        markAsSaved()
       })
     }
   }, [
@@ -40,25 +54,28 @@ function NotebookContainer() {
     syncFromFirestore,
     setTranslationLines,
     setCurrentEditingId,
+    markAsSaved,
   ])
 
   useEffect(() => {
     const handleNoteSelected = (event: CustomEvent) => {
       const note = event.detail
       setEnglishText(note.text)
+      setOriginalContent(note.text)
       if (note.translations) {
         setTranslationLines(note.translations)
       } else {
         clearTranslationLines()
       }
       setCurrentEditingId(note.id)
+      markAsSaved()
     }
 
     window.addEventListener('noteSelected', handleNoteSelected as EventListener)
     return () => {
       window.removeEventListener('noteSelected', handleNoteSelected as EventListener)
     }
-  }, [setTranslationLines, clearTranslationLines, setCurrentEditingId])
+  }, [setTranslationLines, clearTranslationLines, setCurrentEditingId, markAsSaved])
 
   const handleSave = async () => {
     if (!authManager || !firestoreManager) {
@@ -74,6 +91,9 @@ function NotebookContainer() {
       } else if (result.type === 'updated') {
         setTimeout(() => toast.success('Note updated successfully!'), 100)
       }
+      // 保存後は元のコンテンツを更新して未保存状態をリセット
+      setOriginalContent(englishText.trim())
+      markAsSaved()
       // 保存後はリスト更新のために再同期（自動読み込みは無し）
       syncFromFirestore(authManager, firestoreManager)
     }
@@ -84,6 +104,8 @@ function NotebookContainer() {
     setTranslationText('')
     clearTranslationLines()
     setCurrentEditingId(null)
+    setOriginalContent('')
+    markAsSaved()
   }
 
   const handleTranslateClick = async () => {
@@ -104,7 +126,7 @@ function NotebookContainer() {
   return (
     <div id="notebook-container" className={disabled ? 'disabled-overlay' : ''}>
       <div id="english-side" className="notebook-side">
-        <h2>English</h2>
+        <h2>English {hasUnsavedChanges && <span className="unsaved-indicator">●</span>}</h2>
         <div id="input-area">
           <textarea
             id="english-input"
