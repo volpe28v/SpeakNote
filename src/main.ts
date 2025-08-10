@@ -352,9 +352,10 @@ function setupEventListeners(): void {
 
 // 翻訳処理
 async function handleTranslate(): Promise<void> {
-  const input = elements.englishInput.value.trim()
+  const input = elements.englishInput.value
   
-  if (!input) {
+  // 完全に空の場合のみエラー
+  if (!input.trim()) {
     toast.info('Please enter English text')
     return
   }
@@ -376,28 +377,17 @@ async function handleTranslate(): Promise<void> {
   elements.translateButton.style.opacity = '0.6'
   
   try {
-    const lines = input.split('\n') // filterを削除して空行も含める
-    const nonEmptyLines = lines.filter(line => line.trim()).length
-    translationLines = [] // リセット
-    let translatedCount = 0
+    // 元のテキストを改行を保持したまま処理
+    const originalText = elements.englishInput.value // trimしない（空行保持のため）
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (line) {
-        translatedCount++
-        // 進捗表示更新（空行以外の行数でカウント）
-        elements.translateButton.textContent = UI_STRINGS.TRANSLATING_PROGRESS(translatedCount, nonEmptyLines)
-        
-        // 翻訳実行
-        const translation = await translateWithGoogleAPI(line)
-        translationLines.push(translation)
-        
-        // リアルタイム表示更新
-        elements.translationText.value = translationLines.join('\n')
-      } else {
-        translationLines.push('') // 空行はそのまま保持
-      }
-    }
+    // 一括翻訳を実行
+    const translatedText = await translateWithGoogleAPI(originalText)
+    
+    // 翻訳結果を行ごとに分割して保存
+    translationLines = translatedText.split('\n')
+    
+    // 翻訳結果を表示
+    elements.translationText.value = translatedText
     
     toast.success('Translation completed')
   } catch (error) {
@@ -644,12 +634,7 @@ function loadNote(item: Note): void {
   EditingState.startEditing(item.id)
 }
 
-// ヘルパー関数：現在の行番号を取得
-function getCurrentLineNumber(textarea: HTMLTextAreaElement): number {
-  const cursorPosition = textarea.selectionStart
-  const textBeforeCursor = textarea.value.substring(0, cursorPosition)
-  return textBeforeCursor.split('\n').length - 1
-}
+// getCurrentLineNumber関数は削除（一括翻訳により不要）
 
 // ヘルパー関数：現在の行を取得
 function getCurrentLine(textarea: HTMLTextAreaElement): string {
@@ -673,15 +658,14 @@ function updateTranslationDisplay(): void {
 // キーボードイベントハンドラー
 async function handleKeyboardEvents(event: KeyboardEvent): Promise<void> {
   if (event.key === 'Enter') {
-    // エンターキーが押される前に現在の行番号と行内容を取得
-    const lineNumber = getCurrentLineNumber(elements.englishInput)
+    // エンターキーが押される前に現在の行内容を取得
     const currentLine = getCurrentLine(elements.englishInput)
     
     if (currentLine.trim()) {
       // 現在行を文として発音
       speakEnglish(currentLine.trim(), false)
       
-      // 自動的に現在行を翻訳
+      // 自動的に全文を翻訳
       if (GAS_TRANSLATE_URL && !isTranslating) {
         // 翻訳中の状態を表示
         isTranslating = true
@@ -690,18 +674,17 @@ async function handleKeyboardEvents(event: KeyboardEvent): Promise<void> {
         elements.translateButton.style.opacity = '0.6'
         
         try {
-          const translation = await translateWithGoogleAPI(currentLine.trim())
-          // 現在の全テキストを行ごとに分割（空行も含める）
-          const allLines = elements.englishInput.value.split('\n')
-          
-          // translationLinesを全体の行数に合わせて調整
-          while (translationLines.length < allLines.length) {
-            translationLines.push('')
+          // 全文を一括翻訳
+          const fullText = elements.englishInput.value
+          if (fullText.trim()) {
+            const translatedText = await translateWithGoogleAPI(fullText)
+            
+            // 翻訳結果を行ごとに分割して保存
+            translationLines = translatedText.split('\n')
+            
+            // 翻訳結果を表示
+            elements.translationText.value = translatedText
           }
-          
-          // 対応する行に翻訳結果を設定
-          translationLines[lineNumber] = translation
-          updateTranslationDisplay()
         } catch (error) {
           console.error('Auto translation error:', error)
         } finally {
