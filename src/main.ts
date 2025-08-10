@@ -5,21 +5,17 @@ import { toast } from './lib/toast'
 import { checkSpeechSynthesisSupport, speakEnglish, speakJapanese, speakMultipleLines, createUtterance, SPEECH_CONFIG } from './lib/speech'
 import { APP_VERSION, UI_STRINGS } from './config/constants'
 import { TranslationManager } from './managers/TranslationManager'
-import type { Note, SaveResult, DOMElements } from './types'
+import { NoteManager } from './managers/NoteManager'
+import type { Note, DOMElements } from './types'
 
 // Firebase関連のグローバル変数
 let authManager: AuthManager | null = null
 let firestoreManager: FirestoreManager | null = null
 let isFirebaseReady = false
 
-// Currently editing item ID (for update saves)
-let currentEditingId: number | null = null
-
-// Flag to track if latest note has been auto-loaded in this session
-let hasAutoLoadedLatestNote = false
-
-// Translation manager instance
+// Manager instances
 let translationManager: TranslationManager
+let noteManager: NoteManager
 
 // DOM要素の取得
 function getDOMElements(): DOMElements {
@@ -143,8 +139,7 @@ function disableAppFunctions(): void {
   translationManager.clearTranslationLines()
   
   // 編集状態とフラグをリセット
-  currentEditingId = null
-  hasAutoLoadedLatestNote = false
+  noteManager.resetFlags()
   
   // ノート一覧に制限メッセージを表示
   const listContainer = document.getElementById('saved-sentences-list')!
@@ -178,34 +173,37 @@ async function handleLogout(): Promise<void> {
 
 // Firestoreとの同期（読み込み）
 async function syncFromFirestore(): Promise<void> {
-  if (!firestoreManager || !authManager!.getCurrentUser()) {
-    return
-  }
-  
-  try {
-    const cloudNotes = await firestoreManager.getUserNotes()
-    // Firestoreのデータを表示
-    const listContainer = document.getElementById('saved-sentences-list')!
-    displayNotesFromData(cloudNotes, listContainer)
-    EditingState.updateSavedSentenceHighlight()
-    
-    // ログイン後に最新のノートを自動選択（セッション中1回のみ）
-    if (cloudNotes.length > 0 && !currentEditingId && !hasAutoLoadedLatestNote) {
-      const latestNote = cloudNotes[0] // ノートは新しい順に並んでいる
+  await noteManager.syncFromFirestore(
+    authManager!,
+    firestoreManager!,
+    (cloudNotes) => {
+      // Firestoreのデータを表示
+      const listContainer = document.getElementById('saved-sentences-list')!
+      noteManager.displayNotesFromData(
+        cloudNotes,
+        listContainer,
+        loadNote,
+        async (id: number) => {
+          await noteManager.deleteNote(id, authManager!, firestoreManager!, isFirebaseReady)
+          await syncFromFirestore()
+          
+          // 削除したアイテムが編集中だった場合はクリア
+          if (noteManager.getCurrentEditingId() === id) {
+            handleClear()
+          }
+        }
+      )
+      EditingState.updateSavedSentenceHighlight()
+    },
+    (latestNote) => {
       loadNote(latestNote)
-      hasAutoLoadedLatestNote = true
-      toast.info('Latest note loaded automatically')
     }
-  } catch (error) {
-    console.error('Firestore sync error:', error)
-    toast.error('Failed to sync from cloud')
-  }
+  )
 }
 
 // 注意: 以下のlocalStorage関数はローカル→Firebase移行時のマイグレーション用として保持
 function getNotes(): Note[] {
-  const saved = localStorage.getItem('speakNote_savedSentences')
-  return saved ? JSON.parse(saved) : []
+  return noteManager.getNotes()
 }
 
 // 残りの関数は元のscript.jsから移植
@@ -218,6 +216,7 @@ async function initialize() {
   try {
     elements = getDOMElements()
     translationManager = TranslationManager.getInstance()
+    noteManager = NoteManager.getInstance()
     console.log('DOM elements obtained:', elements)
     
     // Check Web Speech API
@@ -346,17 +345,23 @@ async function handleSave(): Promise<void> {
   }
   
   try {
-    const result = await saveNote(englishText, translationsArray)
+    const result = await noteManager.saveNote(
+      englishText,
+      translationsArray,
+      authManager!,
+      firestoreManager!,
+      isFirebaseReady
+    )
     
     if (result) {
       if (result.type === 'updated') {
         toast.success(UI_STRINGS.UPDATED)
         // 更新後もEditingStateを維持
-        currentEditingId = result.id
+        noteManager.setCurrentEditingId(result.id)
       } else {
         toast.success(UI_STRINGS.SAVED_NEW)
         // 保存後は編集状態に切り替え
-        currentEditingId = result.id
+        noteManager.setCurrentEditingId(result.id)
         EditingState.updateUI()
       }
       
@@ -369,42 +374,7 @@ async function handleSave(): Promise<void> {
   }
 }
 
-// 保存処理の実装（Firebase必須）
-async function saveNote(text: string, translations: string[] = []): Promise<SaveResult | false> {
-  if (!text.trim()) return false
-  
-  const trimmedText = text.trim()
-  const cleanTranslations = translations || []
-  
-  // Firebase認証が必要
-  if (!isFirebaseReady || !firestoreManager || !authManager!.getCurrentUser()) {
-    toast.error('Please login to save notes')
-    return false
-  }
-  
-  try {
-    const noteData: Note = {
-      id: currentEditingId || Date.now(),
-      text: trimmedText,
-      translations: cleanTranslations,
-      timestamp: new Date().toISOString()
-    }
-    
-    if (currentEditingId) {
-      // 更新処理
-      await firestoreManager.updateNote(noteData)
-      return { type: 'updated', id: currentEditingId }
-    } else {
-      // 新規作成処理
-      await firestoreManager.saveNote(noteData)
-      return { type: 'saved', id: noteData.id }
-    }
-  } catch (error) {
-    console.error('Firestore save error:', error)
-    toast.error('Save failed. Please try again.')
-    return false
-  }
-}
+// 保存処理の実装（削除 - NoteManagerに移行済み）
 
 // クリア処理
 function handleClear(): void {
@@ -419,127 +389,20 @@ function handleClear(): void {
   elements.englishInput.focus()
 }
 
-// ノート削除処理（Firebase必須）
-async function deleteNote(id: number): Promise<void> {
-  // Firebase認証が必要
-  if (!isFirebaseReady || !firestoreManager || !authManager!.getCurrentUser()) {
-    toast.error('Please login to delete notes')
-    return
-  }
-  
-  try {
-    await firestoreManager.deleteNote(id)
-  } catch (error) {
-    console.error('Firestore delete error:', error)
-    toast.error('Delete failed. Please try again.')
-  }
-}
+// ノート削除処理（削除 - NoteManagerに移行済み）
 
 // displayNotes関数は削除（Firebase必須のためsyncFromFirestoreを使用）
-
-// 汎用的なノート表示関数
-function displayNotesFromData(notes: Note[], container: HTMLElement): void {
-  if (notes.length === 0) {
-    container.innerHTML = '<div class="no-notes">No notes available</div>'
-    return
-  }
-  
-  // 既存の内容をクリア
-  container.innerHTML = ''
-  
-  // 各アイテムを動的に作成
-  notes.forEach(item => {
-    const itemDiv = document.createElement('div')
-    itemDiv.className = 'saved-sentence-item'
-    itemDiv.dataset.id = String(item.id)
-    
-    // 英文と翻訳を含むコンテナ
-    const contentDiv = document.createElement('div')
-    contentDiv.className = 'sentence-content'
-    
-    // 英文を表示（改行をスペースに変換して1行表示）
-    const englishDiv = document.createElement('div')
-    englishDiv.className = 'sentence-english'
-    const displayEnglish = item.text.replace(/\n/g, ' ')
-    englishDiv.textContent = displayEnglish
-    contentDiv.appendChild(englishDiv)
-    
-    // 翻訳がある場合は表示（空行を保持して対応関係を明確にする）
-    if (item.translations && item.translations.length > 0) {
-      const japaneseDiv = document.createElement('div')
-      japaneseDiv.className = 'sentence-japanese'
-      // 空行も含めて結合（ただし、表示時は空行を適切に処理）
-      const displayJapanese = item.translations.join(' ').replace(/\s{2,}/g, ' ').trim()
-      japaneseDiv.textContent = displayJapanese
-      contentDiv.appendChild(japaneseDiv)
-    }
-    
-    // ボタンコンテナ
-    const buttonsDiv = document.createElement('div')
-    buttonsDiv.className = 'sentence-buttons'
-    
-    // 再生ボタン
-    const playButton = document.createElement('button')
-    playButton.textContent = '▶️'
-    playButton.className = 'action-button speak-action'
-    playButton.onclick = (event) => {
-      event.stopPropagation() // ノート選択イベントを防ぐ
-      speakMultipleLines(item.text)
-    }
-    buttonsDiv.appendChild(playButton)
-    
-    // 削除ボタン
-    const deleteButton = document.createElement('button')
-    deleteButton.textContent = '❌'
-    deleteButton.className = 'action-button delete-action'
-    deleteButton.onclick = async (event) => {
-      event.stopPropagation() // ノート選択イベントを防ぐ
-      if (confirm('Delete this note?')) {
-        await deleteNote(item.id)
-        // Firebase必須のため常にFirestoreから同期
-        await syncFromFirestore()
-        
-        // 削除したアイテムが編集中だった場合はクリア
-        if (currentEditingId === item.id) {
-          handleClear()
-        }
-        
-        toast.success('Note deleted')
-      }
-    }
-    buttonsDiv.appendChild(deleteButton)
-    
-    // ノート全体をクリッカブルにする
-    itemDiv.addEventListener('click', () => {
-      loadNote(item)
-    })
-    
-    // 要素をアイテムに追加
-    itemDiv.appendChild(contentDiv)
-    itemDiv.appendChild(buttonsDiv)
-    
-    // リストに追加
-    container.appendChild(itemDiv)
-  })
-}
+// 汎用的なノート表示関数（削除 - NoteManagerに移行済み）
 
 // ノートを入力エリアに読み込む関数
 function loadNote(item: Note): void {
-  elements.englishInput.value = item.text
-  elements.englishInput.focus()
-  
-  // 保存された翻訳がある場合は表示
-  if (item.translations && item.translations.length > 0) {
-    translationManager.setTranslationLines(item.translations)
-    translationManager.updateTranslationDisplay(elements.translationText)
-  } else {
-    // 翻訳がない場合はクリア
-    translationManager.clearTranslationLines()
-    elements.translationText.value = ''
-  }
-  
-  // 編集状態を開始
-  EditingState.startEditing(item.id)
+  noteManager.loadNote(
+    item,
+    elements.englishInput,
+    elements.translationText,
+    translationManager,
+    EditingState.startEditing
+  )
 }
 
 // getCurrentLineNumber関数は削除（一括翻訳により不要）
@@ -617,19 +480,19 @@ async function handleKeyboardEvents(event: KeyboardEvent): Promise<void> {
 // EditingState オブジェクト
 const EditingState = {
   startEditing: (itemId: number) => {
-    currentEditingId = itemId
+    noteManager.setCurrentEditingId(itemId)
     EditingState.updateUI()
     EditingState.updateSavedSentenceHighlight()
   },
   
   startNew: () => {
-    currentEditingId = null
+    noteManager.setCurrentEditingId(null)
     EditingState.updateUI()
     EditingState.updateSavedSentenceHighlight()
   },
   
   updateUI: () => {
-    const isEditing = currentEditingId !== null
+    const isEditing = noteManager.getCurrentEditingId() !== null
     elements.saveButton.textContent = isEditing ? UI_STRINGS.SAVE_UPDATE : UI_STRINGS.SAVE_NEW
     elements.clearButton.textContent = UI_STRINGS.NEW_NOTE
   },
@@ -641,6 +504,7 @@ const EditingState = {
     })
     
     // 編集中のアイテムがあればハイライト
+    const currentEditingId = noteManager.getCurrentEditingId()
     if (currentEditingId) {
       const editingItem = document.querySelector(`[data-id="${currentEditingId}"]`)
       if (editingItem) {
