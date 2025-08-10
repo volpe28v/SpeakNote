@@ -1,3 +1,6 @@
+// アプリケーションのバージョン
+const APP_VERSION = '1.0.0';
+
 // DOM要素の取得
 const englishInput = document.getElementById('english-input');
 const speakButton = document.getElementById('speak-button');
@@ -594,6 +597,12 @@ clearButton.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     displayNotes();
     EditingState.startNew(); // UIを初期状態に設定
+    
+    // バージョン表示を動的に更新
+    const versionElement = document.querySelector('.version');
+    if (versionElement) {
+        versionElement.textContent = `ver${APP_VERSION}`;
+    }
 });
 
 // 直前の単語を取得する関数
