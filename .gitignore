@@ -6,6 +6,10 @@ firebase-config.dev.js
 .env.production
 .env.production.local
 
+# Vite/TypeScript関連
+dist/
+.env.local
+
 # Firebase CLI関連
 .firebase/
 firebase-debug.log
