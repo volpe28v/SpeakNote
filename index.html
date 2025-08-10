@@ -9,9 +9,28 @@
 <body>
     <div class="header">
         <h1>SpeakNote</h1>
-        <span class="version">ver1.0.0</span>
+        <div class="header-right">
+            <span class="version">ver1.0.0</span>
+            <div id="auth-container">
+                <button id="login-button" class="auth-button">📱 ログイン</button>
+                <div id="user-info" class="user-info" style="display: none;">
+                    <img id="user-avatar" class="user-avatar" src="" alt="">
+                    <span id="user-name" class="user-name"></span>
+                    <button id="logout-button" class="auth-button logout">ログアウト</button>
+                </div>
+            </div>
+        </div>
     </div>
     
+    <!-- ログイン促進メッセージ -->
+    <div id="login-required-message" class="login-required-message" style="display: none;">
+        <div class="login-prompt">
+            <h3>📱 ログインが必要です</h3>
+            <p>SpeakNoteを使用するにはGoogleアカウントでログインしてください</p>
+            <button id="login-prompt-button" class="login-prompt-button">Googleアカウントでログイン</button>
+        </div>
+    </div>
+
     <div id="notebook-container">
         <div id="english-side" class="notebook-side">
             <h2>📝 English</h2>
@@ -48,6 +67,8 @@
     <!-- トースト通知コンテナ -->
     <div id="toast-container"></div>
 
+    <!-- Firebase SDKを読み込み -->
+    <script type="module" src="firebase.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

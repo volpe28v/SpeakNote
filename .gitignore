@@ -1,0 +1,34 @@
+# Firebase関連の秘匿情報
+firebase-config.js
+firebase-config.dev.js
+.env
+.env.local
+.env.production
+.env.production.local
+
+# Firebase CLI関連
+.firebase/
+firebase-debug.log
+
+# Node.js関連
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS関連
+.DS_Store
+Thumbs.db
+
+# IDE関連
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ログファイル
+*.log
+
+# 一時ファイル
+*.tmp
+*.temp

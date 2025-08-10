@@ -10,8 +10,9 @@ SpeakNoteは小学生や英語初級者向けの英語学習Webアプリケー�
 
 - **フロントエンド**: バニラJavaScript（フレームワークなし）
 - **音声機能**: Web Speech API
-- **データ保存**: localStorage（最大20件）
-- **将来的な連携**: Firebase Firestore（未実装）
+- **認証**: Firebase Authentication（Google認証）
+- **データ保存**: Firebase Firestore + localStorage（フォールバック）
+- **ホスティング**: Firebase Hosting
 
 ## 開発環境のセットアップ
 
@@ -37,21 +38,30 @@ npx http-server
 3. **保存機能**: localStorageを使用（最大20件）
 4. **スペルチェック**: 簡易的なスペルミス検出
 
-### ファイル構成（予定）
+### ファイル構成
 ```
-├── index.html          # メインHTMLファイル
-├── style.css          # スタイルシート
-├── script.js          # メインのJavaScriptファイル
+├── index.html             # メインHTMLファイル
+├── style.css             # スタイルシート
+├── script.js             # メインのJavaScriptファイル
+├── firebase.js           # Firebase SDK設定と操作
+├── firebase-config.js    # Firebase設定（環境別）
+├── firebase.json         # Firebase Hosting設定
+├── .firebaserc          # Firebase プロジェクト設定
+├── firestore.rules      # Firestore セキュリティルール
+├── firestore.indexes.json # Firestore インデックス設定
+├── DEPLOY.md            # デプロイ手順書
 └── docs/
-    └── description.md # 詳細な仕様書
+    └── description.md   # 詳細な仕様書
 ```
 
 ## 実装時の注意事項
 
 1. **Web Speech API**: ブラウザ互換性を確認（Chrome推奨）
-2. **localStorage**: 容量制限とデータ構造に注意
-3. **レスポンシブデザイン**: モバイルファーストで実装
-4. **アクセシビリティ**: 小学生が使いやすいUIを心がける
+2. **Firebase Authentication**: Google認証のみ実装
+3. **Firestore**: ユーザー毎のデータ分離を厳格に実装
+4. **レスポンシブデザイン**: モバイルファーストで実装
+5. **アクセシビリティ**: 小学生が使いやすいUIを心がける
+6. **セキュリティ**: Firestoreルールでユーザーデータを保護
 
 ## 参考資料
 

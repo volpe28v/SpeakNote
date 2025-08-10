@@ -1,5 +1,10 @@
 // アプリケーションのバージョン
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.1.0';
+
+// Firebase関連のグローバル変数
+let authManager = null;
+let firestoreManager = null;
+let isFirebaseReady = false;
 
 // DOM要素の取得
 const englishInput = document.getElementById('english-input');
@@ -9,6 +14,19 @@ const translationText = document.getElementById('translation-text');
 const saveButton = document.getElementById('save-button');
 const speakJapaneseButton = document.getElementById('speak-japanese-button');
 const clearButton = document.getElementById('clear-button');
+
+// Firebase UI要素
+const loginButton = document.getElementById('login-button');
+const userInfo = document.getElementById('user-info');
+const userAvatar = document.getElementById('user-avatar');
+const userName = document.getElementById('user-name');
+const logoutButton = document.getElementById('logout-button');
+
+// ログイン制限UI要素
+const loginRequiredMessage = document.getElementById('login-required-message');
+const loginPromptButton = document.getElementById('login-prompt-button');
+const notebookContainer = document.getElementById('notebook-container');
+const savedSentencesContainer = document.getElementById('saved-sentences-container');
 
 // 翻訳履歴を管理する配列
 let translationLines = [];
@@ -348,18 +366,187 @@ speakJapaneseButton.addEventListener('click', () => {
     speakJapanese(japaneseText);
 });
 
-// localStorage関連の関数
+// Firebase初期化とUI更新
+async function initializeFirebase() {
+    try {
+        // firebase.jsから必要なクラスをインポート
+        const { AuthManager, FirestoreManager } = await import('./firebase.js');
+        
+        authManager = new AuthManager();
+        firestoreManager = new FirestoreManager(authManager);
+        
+        // 認証状態の監視開始
+        await authManager.init();
+        
+        // 認証状態変更時のコールバック設定
+        authManager.onAuthStateChanged((user) => {
+            updateAuthUI(user);
+            if (user) {
+                // ログイン時にFirestoreからノートを読み込み
+                syncFromFirestore();
+            } else {
+                // ログアウト時は機能制限のためノート表示は無効化済み
+                disableAppFunctions();
+            }
+        });
+        
+        // ログイン・ログアウトボタンのイベントリスナー設定
+        loginButton.addEventListener('click', handleLogin);
+        logoutButton.addEventListener('click', handleLogout);
+        loginPromptButton.addEventListener('click', handleLogin);
+        
+        isFirebaseReady = true;
+    } catch (error) {
+        console.error('Firebase初期化エラー:', error);
+        Toast.error('Firebase初期化に失敗しました');
+    }
+}
+
+// 認証UI更新
+function updateAuthUI(user) {
+    if (user) {
+        // ログイン状態
+        loginButton.style.display = 'none';
+        userInfo.style.display = 'flex';
+        userAvatar.src = user.photoURL || '';
+        userName.textContent = user.displayName || 'ユーザー';
+        
+        // アプリ機能を有効化
+        enableAppFunctions();
+    } else {
+        // ログアウト状態
+        loginButton.style.display = 'block';
+        userInfo.style.display = 'none';
+        
+        // アプリ機能を無効化
+        disableAppFunctions();
+    }
+}
+
+// アプリ機能を有効化
+function enableAppFunctions() {
+    loginRequiredMessage.style.display = 'none';
+    notebookContainer.classList.remove('disabled-overlay');
+    savedSentencesContainer.classList.remove('disabled-overlay');
+    
+    // 入力フィールドとボタンを有効化
+    englishInput.disabled = false;
+    speakButton.disabled = false;
+    translateButton.disabled = false;
+    saveButton.disabled = false;
+    clearButton.disabled = false;
+    speakJapaneseButton.disabled = false;
+}
+
+// アプリ機能を無効化
+function disableAppFunctions() {
+    loginRequiredMessage.style.display = 'flex';
+    notebookContainer.classList.add('disabled-overlay');
+    savedSentencesContainer.classList.add('disabled-overlay');
+    
+    // 入力フィールドとボタンを無効化
+    englishInput.disabled = true;
+    speakButton.disabled = true;
+    translateButton.disabled = true;
+    saveButton.disabled = true;
+    clearButton.disabled = true;
+    speakJapaneseButton.disabled = true;
+    
+    // 入力内容をクリア
+    englishInput.value = '';
+    translationText.value = '';
+    translationLines = [];
+    
+    // ノート一覧に制限メッセージを表示
+    const listContainer = document.getElementById('saved-sentences-list');
+    listContainer.innerHTML = '<div class="no-notes">ログインしてノートを表示</div>';
+}
+
+// ログイン処理
+async function handleLogin() {
+    if (!authManager) return;
+    
+    try {
+        await authManager.signIn();
+        // ローカルストレージからの移行を提案
+        const localNotes = getNotes();
+        if (localNotes.length > 0) {
+            if (confirm(`ローカルに保存された${localNotes.length}件のノートをクラウドに移行しますか？`)) {
+                await firestoreManager.migrateFromLocalStorage();
+                syncFromFirestore(); // 移行後に再読み込み
+            }
+        }
+    } catch (error) {
+        console.error('ログインエラー:', error);
+    }
+}
+
+// ログアウト処理
+async function handleLogout() {
+    if (!authManager) return;
+    await authManager.signOut();
+}
+
+// Firestoreとの同期（読み込み）
+async function syncFromFirestore() {
+    if (!firestoreManager || !authManager.getCurrentUser()) {
+        return;
+    }
+    
+    try {
+        const cloudNotes = await firestoreManager.getUserNotes();
+        // Firestoreのデータを表示
+        const listContainer = document.getElementById('saved-sentences-list');
+        displayNotesFromData(cloudNotes, listContainer);
+        EditingState.updateSavedSentenceHighlight();
+    } catch (error) {
+        console.error('Firestore同期エラー:', error);
+        Toast.error('クラウドからの同期に失敗しました');
+        // エラー時はローカルデータにフォールバック
+        displayNotes();
+    }
+}
+
+// localStorage関連の関数（Firebaseバックアップ用として保持）
 function getNotes() {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? JSON.parse(saved) : [];
 }
 
-function saveNote(text, translations = null) {
+async function saveNote(text, translations = null) {
     if (!text.trim()) return false;
     
-    const notes = getNotes();
     const trimmedText = text.trim();
     const cleanTranslations = translations || [];
+    
+    // Firebaseが利用可能でログインしている場合
+    if (isFirebaseReady && firestoreManager && authManager.getCurrentUser()) {
+        try {
+            const noteData = {
+                id: currentEditingId || Date.now(),
+                text: trimmedText,
+                translations: cleanTranslations,
+                timestamp: new Date().toISOString()
+            };
+            
+            if (currentEditingId) {
+                // 更新処理
+                await firestoreManager.updateNote(noteData);
+                return { type: 'updated', id: currentEditingId };
+            } else {
+                // 新規作成処理
+                await firestoreManager.saveNote(noteData);
+                return { type: 'saved', id: noteData.id };
+            }
+        } catch (error) {
+            console.error('Firestore保存エラー:', error);
+            Toast.error('クラウド保存に失敗しました。ローカルに保存します。');
+            // Firestoreエラー時はlocalStorageにフォールバック
+        }
+    }
+    
+    // ローカルストレージでの保存処理（従来の処理）
+    const notes = getNotes();
     
     // 編集中のアイテムがある場合は更新処理
     if (currentEditingId) {
@@ -425,24 +612,33 @@ function saveNote(text, translations = null) {
     return { type: 'saved', id: newItem.id };
 }
 
-function deleteNote(id) {
+async function deleteNote(id) {
+    // Firebaseが利用可能でログインしている場合
+    if (isFirebaseReady && firestoreManager && authManager.getCurrentUser()) {
+        try {
+            await firestoreManager.deleteNote(id);
+            return;
+        } catch (error) {
+            console.error('Firestore削除エラー:', error);
+            Toast.error('クラウドでの削除に失敗しました。ローカルのみ削除します。');
+        }
+    }
+    
+    // ローカルストレージでの削除処理
     const notes = getNotes();
     const filtered = notes.filter(item => item.id !== id);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
-// ノート一覧を表示する関数
-function displayNotes() {
-    const notes = getNotes();
-    const listContainer = document.getElementById('saved-sentences-list');
-    
+// 汎用的なノート表示関数
+function displayNotesFromData(notes, container) {
     if (notes.length === 0) {
-        listContainer.innerHTML = '<div class="no-notes">ノートがありません</div>';
+        container.innerHTML = '<div class="no-notes">ノートがありません</div>';
         return;
     }
     
     // 既存の内容をクリア
-    listContainer.innerHTML = '';
+    container.innerHTML = '';
     
     // 各アイテムを動的に作成
     notes.forEach(item => {
@@ -505,8 +701,15 @@ function displayNotes() {
         itemDiv.appendChild(contentDiv);
         itemDiv.appendChild(actionsDiv);
         
-        listContainer.appendChild(itemDiv);
+        container.appendChild(itemDiv);
     });
+}
+
+// ローカルストレージ用のノート一覧表示関数
+function displayNotes() {
+    const notes = getNotes();
+    const listContainer = document.getElementById('saved-sentences-list');
+    displayNotesFromData(notes, listContainer);
     
     // 編集中のアイテムをハイライト
     EditingState.updateSavedSentenceHighlight();
@@ -537,7 +740,7 @@ function loadNote(item) {
 }
 
 // ノートを削除する関数（UI用）
-function deleteNoteById(id) {
+async function deleteNoteById(id) {
     if (confirm('このノートを削除しますか？')) {
         // 削除するアイテムが編集中の場合は編集状態をリセット
         if (currentEditingId === id) {
@@ -547,24 +750,40 @@ function deleteNoteById(id) {
             translationLines = [];
         }
         
-        deleteNote(id);
-        displayNotes(); // 一覧を更新
+        await deleteNote(id);
+        
+        // Firebaseログイン時は同期、そうでなければローカル表示
+        if (isFirebaseReady && authManager.getCurrentUser()) {
+            await syncFromFirestore();
+        } else {
+            displayNotes();
+        }
     }
 }
 
 // 保存ボタンクリックイベント
-saveButton.addEventListener('click', () => {
+saveButton.addEventListener('click', async () => {
     const text = englishInput.value;
     // 現在の翻訳も一緒に保存
-    const result = saveNote(text, translationLines);
+    const result = await saveNote(text, translationLines);
     if (result && result.type === 'updated') {
         Toast.success(UI_STRINGS.UPDATED);
-        displayNotes(); // 一覧を更新
+        // Firebaseログイン時は同期、そうでなければローカル表示
+        if (isFirebaseReady && authManager.getCurrentUser()) {
+            await syncFromFirestore();
+        } else {
+            displayNotes();
+        }
         // 更新後も編集状態を維持
         EditingState.startEditing(result.id);
     } else if (result && result.type === 'saved') {
         Toast.success(UI_STRINGS.SAVED_NEW);
-        displayNotes(); // 一覧を更新
+        // Firebaseログイン時は同期、そうでなければローカル表示
+        if (isFirebaseReady && authManager.getCurrentUser()) {
+            await syncFromFirestore();
+        } else {
+            displayNotes();
+        }
         // 新規保存後は編集モードに移行
         EditingState.startEditing(result.id);
     }
@@ -594,8 +813,16 @@ clearButton.addEventListener('click', () => {
 });
 
 // ページ読み込み時にノートを表示
-document.addEventListener('DOMContentLoaded', () => {
-    displayNotes();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Firebase初期化
+    await initializeFirebase();
+    
+    // 初期表示は認証状態で自動切り替え（updateAuthUIで処理される）
+    // 未ログインの場合は初期状態で機能無効化
+    if (!isFirebaseReady || !authManager.getCurrentUser()) {
+        disableAppFunctions();
+    }
+    
     EditingState.startNew(); // UIを初期状態に設定
     
     // バージョン表示を動的に更新
