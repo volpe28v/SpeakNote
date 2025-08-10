@@ -371,7 +371,7 @@ function saveNote(text, translations = null) {
             };
             
             localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-            return 'updated';
+            return { type: 'updated', id: currentEditingId };
         }
     }
     
@@ -418,7 +418,8 @@ function saveNote(text, translations = null) {
     // localStorageに保存
     localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
     
-    return 'saved';
+    // 新規作成時はIDを含めた結果を返す
+    return { type: 'saved', id: newItem.id };
 }
 
 function deleteNote(id) {
@@ -553,12 +554,16 @@ saveButton.addEventListener('click', () => {
     const text = englishInput.value;
     // 現在の翻訳も一緒に保存
     const result = saveNote(text, translationLines);
-    if (result === 'updated') {
+    if (result && result.type === 'updated') {
         Toast.success(UI_STRINGS.UPDATED);
         displayNotes(); // 一覧を更新
-    } else if (result === 'saved') {
+        // 更新後も編集状態を維持
+        EditingState.startEditing(result.id);
+    } else if (result && result.type === 'saved') {
         Toast.success(UI_STRINGS.SAVED_NEW);
         displayNotes(); // 一覧を更新
+        // 新規保存後は編集モードに移行
+        EditingState.startEditing(result.id);
     }
     // falseの場合は既にsaveNote内でアラートが表示される
 });
