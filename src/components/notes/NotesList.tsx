@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import React from 'react'
 import { useApp } from '../../contexts/AppContext'
 import { speakMultipleLines } from '../../lib/speech'
 import { toast } from '../../lib/toast'
@@ -8,13 +8,9 @@ function NotesList() {
   const { auth, translation, notes } = useApp()
   const { user, authManager, firestoreManager } = auth
   const { setTranslationLines } = translation
-  const { notes: notesList, currentEditingId, deleteNote, setCurrentEditingId, syncFromFirestore } = notes
+  const { notes: notesList, currentEditingId, deleteNote, setCurrentEditingId } = notes
 
-  useEffect(() => {
-    if (user && authManager && firestoreManager) {
-      syncFromFirestore(authManager, firestoreManager)
-    }
-  }, [user, authManager, firestoreManager, syncFromFirestore])
+  // NotebookContainerで既に同期されるため、こちらでは個別の同期処理は不要
 
   const handleNoteClick = (note: Note) => {
     // この機能は NotebookContainer 側で処理
@@ -23,7 +19,7 @@ function NotesList() {
       setTranslationLines(note.translations)
     }
     setCurrentEditingId(note.id)
-    
+
     // カスタムイベントを発行してNotebookContainerに通知
     const event = new CustomEvent('noteSelected', { detail: note })
     window.dispatchEvent(event)
@@ -31,7 +27,7 @@ function NotesList() {
 
   const handleDelete = async (noteId: number, event: React.MouseEvent) => {
     event.stopPropagation()
-    
+
     if (!authManager || !firestoreManager) {
       setTimeout(() => toast.error('Please login to delete notes'), 100)
       return
@@ -40,7 +36,7 @@ function NotesList() {
     if (confirm('Delete this note?')) {
       await deleteNote(noteId, authManager, firestoreManager)
       setTimeout(() => toast.success('Note deleted'), 100)
-      syncFromFirestore(authManager, firestoreManager)
+      // deleteNote内でnotes状態が自動更新されるため、再同期は不要
     }
   }
 
@@ -67,30 +63,31 @@ function NotesList() {
         {notesList.length === 0 ? (
           <div className="no-notes">No notes available</div>
         ) : (
-          notesList.map(note => (
-            <div 
-              key={note.id} 
+          notesList.map((note) => (
+            <div
+              key={note.id}
               className={`saved-sentence-item ${currentEditingId === note.id ? 'editing' : ''}`}
               onClick={() => handleNoteClick(note)}
             >
               <div className="sentence-content">
-                <div className="sentence-english">
-                  {note.text.replace(/\n/g, ' ')}
-                </div>
+                <div className="sentence-english">{note.text.replace(/\n/g, ' ')}</div>
                 {note.translations && note.translations.length > 0 && (
                   <div className="sentence-japanese">
-                    {note.translations.join(' ').replace(/\s{2,}/g, ' ').trim()}
+                    {note.translations
+                      .join(' ')
+                      .replace(/\s{2,}/g, ' ')
+                      .trim()}
                   </div>
                 )}
               </div>
               <div className="sentence-buttons">
-                <button 
+                <button
                   className="action-button speak-action"
                   onClick={(e) => handleSpeak(note.text, e)}
                 >
                   ▶️
                 </button>
-                <button 
+                <button
                   className="action-button delete-action"
                   onClick={(e) => handleDelete(note.id, e)}
                 >

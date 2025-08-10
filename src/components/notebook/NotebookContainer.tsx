@@ -6,7 +6,13 @@ import { toast } from '../../lib/toast'
 function NotebookContainer() {
   const { auth, translation, notes, input } = useApp()
   const { user, authManager, firestoreManager } = auth
-  const { translationLines, isTranslating, handleTranslate, setTranslationLines, clearTranslationLines } = translation
+  const {
+    translationLines,
+    isTranslating,
+    handleTranslate,
+    setTranslationLines,
+    clearTranslationLines,
+  } = translation
   const { isSaving, saveNote, setCurrentEditingId, syncFromFirestore } = notes
   const { handleKeyboardEvent } = input
 
@@ -27,7 +33,14 @@ function NotebookContainer() {
         setCurrentEditingId(note.id)
       })
     }
-  }, [user, authManager, firestoreManager, syncFromFirestore, setTranslationLines, setCurrentEditingId])
+  }, [
+    user,
+    authManager,
+    firestoreManager,
+    syncFromFirestore,
+    setTranslationLines,
+    setCurrentEditingId,
+  ])
 
   useEffect(() => {
     const handleNoteSelected = (event: CustomEvent) => {
@@ -61,6 +74,7 @@ function NotebookContainer() {
       } else if (result.type === 'updated') {
         setTimeout(() => toast.success('Note updated successfully!'), 100)
       }
+      // 保存後はリスト更新のために再同期（自動読み込みは無し）
       syncFromFirestore(authManager, firestoreManager)
     }
   }
@@ -92,61 +106,57 @@ function NotebookContainer() {
       <div id="english-side" className="notebook-side">
         <h2>English</h2>
         <div id="input-area">
-          <textarea 
+          <textarea
             id="english-input"
             value={englishText}
             onChange={(e) => setEnglishText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type English here (Enter for translation)" 
-            autoFocus 
+            placeholder="Type English here (Enter for translation)"
+            autoFocus
             rows={8}
             disabled={disabled}
           />
           <div className="button-group">
-            <button 
+            <button
               id="speak-button"
               onClick={() => speakEnglish(englishText)}
               disabled={disabled || !englishText.trim()}
             >
               Speak
             </button>
-            <button 
+            <button
               id="save-button"
               onClick={handleSave}
               disabled={disabled || !englishText.trim() || isSaving}
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>
-            <button 
-              id="clear-button"
-              onClick={handleClear}
-              disabled={disabled}
-            >
+            <button id="clear-button" onClick={handleClear} disabled={disabled}>
               New
             </button>
           </div>
         </div>
       </div>
-      
+
       <div id="japanese-side" className="notebook-side">
         <h2>Japanese</h2>
         <div id="translation-area">
-          <textarea 
+          <textarea
             id="translation-text"
             value={translationText}
-            readOnly 
-            placeholder="Japanese translation will appear here" 
+            readOnly
+            placeholder="Japanese translation will appear here"
             rows={8}
           />
           <div className="button-group">
-            <button 
+            <button
               id="translate-button"
               onClick={handleTranslateClick}
               disabled={disabled || !englishText.trim() || isTranslating}
             >
               {isTranslating ? 'Translating...' : 'Translate'}
             </button>
-            <button 
+            <button
               id="speak-japanese-button"
               onClick={() => speakJapanese(translationText)}
               disabled={disabled || !translationText.trim()}
