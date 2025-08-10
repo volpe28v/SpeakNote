@@ -20,6 +20,8 @@ function NotebookContainer() {
   const [englishText, setEnglishText] = useState('')
   const [translationText, setTranslationText] = useState('')
   const [originalContent, setOriginalContent] = useState('')
+  const [selectedText, setSelectedText] = useState('')
+  const [showSelectionButton, setShowSelectionButton] = useState(false)
 
   useEffect(() => {
     setTranslationText(translationLines.join('\n'))
@@ -121,6 +123,25 @@ function NotebookContainer() {
     await handleKeyboardEvent(event, handleAutoTranslation)
   }
 
+  const handleTextSelection = () => {
+    const selection = window.getSelection()
+    const selectedText = selection?.toString().trim() || ''
+
+    if (selectedText && translationText.includes(selectedText)) {
+      setSelectedText(selectedText)
+      setShowSelectionButton(true)
+    } else {
+      setSelectedText('')
+      setShowSelectionButton(false)
+    }
+  }
+
+  const handleSpeakSelection = () => {
+    if (selectedText) {
+      speakJapanese(selectedText)
+    }
+  }
+
   const disabled = !user
 
   return (
@@ -169,6 +190,8 @@ function NotebookContainer() {
             readOnly
             placeholder="Japanese translation will appear here"
             rows={8}
+            onMouseUp={handleTextSelection}
+            onTouchEnd={handleTextSelection}
           />
           <div className="button-group">
             <button
@@ -185,6 +208,15 @@ function NotebookContainer() {
             >
               Speak JP
             </button>
+            {showSelectionButton && (
+              <button
+                id="speak-selection-button"
+                onClick={handleSpeakSelection}
+                disabled={disabled}
+              >
+                Selected
+              </button>
+            )}
           </div>
         </div>
       </div>
