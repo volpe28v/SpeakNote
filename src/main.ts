@@ -19,6 +19,9 @@ let translationLines: string[] = []
 // Currently editing item ID (for update saves)
 let currentEditingId: number | null = null
 
+// Flag to track if latest note has been auto-loaded in this session
+let hasAutoLoadedLatestNote = false
+
 // Constants for save functionality
 const STORAGE_KEY = 'speakNote_savedSentences'
 const MAX_SAVED_ITEMS = 100
@@ -164,6 +167,10 @@ function disableAppFunctions(): void {
   elements.translationText.value = ''
   translationLines = []
   
+  // 編集状態とフラグをリセット
+  currentEditingId = null
+  hasAutoLoadedLatestNote = false
+  
   // ノート一覧に制限メッセージを表示
   const listContainer = document.getElementById('saved-sentences-list')!
   listContainer.innerHTML = '<div class="no-notes">Please login to view notes</div>'
@@ -206,6 +213,14 @@ async function syncFromFirestore(): Promise<void> {
     const listContainer = document.getElementById('saved-sentences-list')!
     displayNotesFromData(cloudNotes, listContainer)
     EditingState.updateSavedSentenceHighlight()
+    
+    // ログイン後に最新のノートを自動選択（セッション中1回のみ）
+    if (cloudNotes.length > 0 && !currentEditingId && !hasAutoLoadedLatestNote) {
+      const latestNote = cloudNotes[0] // ノートは新しい順に並んでいる
+      loadNote(latestNote)
+      hasAutoLoadedLatestNote = true
+      toast.info('Latest note loaded automatically')
+    }
   } catch (error) {
     console.error('Firestore sync error:', error)
     toast.error('Failed to sync from cloud')
@@ -602,6 +617,14 @@ function displayNotes(): void {
   const notes = getNotes()
   const listContainer = document.getElementById('saved-sentences-list')!
   displayNotesFromData(notes, listContainer)
+  
+  // 初回表示時のローカルでも最新ノートを自動選択（セッション中1回のみ）
+  if (notes.length > 0 && !currentEditingId && !hasAutoLoadedLatestNote) {
+    const latestNote = notes[0] // ノートは新しい順に並んでいる
+    loadNote(latestNote)
+    hasAutoLoadedLatestNote = true
+    toast.info('Latest note loaded automatically')
+  }
 }
 
 // 汎用的なノート表示関数
