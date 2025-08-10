@@ -1,73 +1,73 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpeakNote - 英語学習アプリ</title>
+    <title>SpeakNote - English Learning App</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="header">
         <h1>SpeakNote</h1>
         <div class="header-right">
-            <span class="version">ver1.0.0</span>
+            <span class="version">ver1.1.0</span>
             <div id="auth-container">
-                <button id="login-button" class="auth-button">📱 ログイン</button>
+                <button id="login-button" class="auth-button">Sign In</button>
                 <div id="user-info" class="user-info" style="display: none;">
                     <img id="user-avatar" class="user-avatar" src="" alt="">
                     <span id="user-name" class="user-name"></span>
-                    <button id="logout-button" class="auth-button logout">ログアウト</button>
+                    <button id="logout-button" class="auth-button logout">Sign Out</button>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- ログイン促進メッセージ -->
+    <!-- Login required message -->
     <div id="login-required-message" class="login-required-message" style="display: none;">
         <div class="login-prompt">
-            <h3>📱 ログインが必要です</h3>
-            <p>SpeakNoteを使用するにはGoogleアカウントでログインしてください</p>
-            <button id="login-prompt-button" class="login-prompt-button">Googleアカウントでログイン</button>
+            <h3>🔐 Login Required</h3>
+            <p>Please sign in with your Google account to use SpeakNote</p>
+            <button id="login-prompt-button" class="login-prompt-button">Sign in with Google</button>
         </div>
     </div>
 
     <div id="notebook-container">
         <div id="english-side" class="notebook-side">
-            <h2>📝 English</h2>
+            <h2>English</h2>
             <div id="input-area">
-                <textarea id="english-input" placeholder="英語を入力してください（エンターで改行・翻訳）" autofocus rows="8"></textarea>
+                <textarea id="english-input" placeholder="Type English here (Enter for translation)" autofocus rows="8"></textarea>
                 <div class="button-group">
-                    <button id="speak-button">🔊 発音する</button>
-                    <button id="save-button">💾 保存</button>
-                    <button id="clear-button">🗑️ クリア</button>
+                    <button id="speak-button">Speak</button>
+                    <button id="save-button">Save</button>
+                    <button id="clear-button">New</button>
                 </div>
             </div>
         </div>
         
         <div id="japanese-side" class="notebook-side">
-            <h2>🗾 日本語訳</h2>
+            <h2>Japanese</h2>
             <div id="translation-area">
-                <textarea id="translation-text" readonly placeholder="ここに日本語訳が表示されます" rows="8"></textarea>
+                <textarea id="translation-text" readonly placeholder="Japanese translation will appear here" rows="8"></textarea>
                 <div class="button-group">
-                    <button id="translate-button">🔁 翻訳</button>
-                    <button id="speak-japanese-button">🇯🇵 読上げ</button>
+                    <button id="translate-button">Translate</button>
+                    <button id="speak-japanese-button">Speak JP</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ノート一覧 -->
+    <!-- Notes list -->
     <div id="saved-sentences-container">
-        <h2>📚 ノート</h2>
+        <h2>Notes</h2>
         <div id="saved-sentences-list">
-            <!-- ここにノートが表示される -->
+            <!-- Notes will appear here -->
         </div>
     </div>
 
-    <!-- トースト通知コンテナ -->
+    <!-- Toast notifications -->
     <div id="toast-container"></div>
 
-    <!-- Vite エントリーポイント -->
+    <!-- Vite entry point -->
     <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

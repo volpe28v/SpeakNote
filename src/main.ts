@@ -13,34 +13,34 @@ let authManager: AuthManager | null = null
 let firestoreManager: FirestoreManager | null = null
 let isFirebaseReady = false
 
-// 翻訳履歴を管理する配列
+// Translation history array
 let translationLines: string[] = []
 
-// 編集中のアイテムID（更新保存のため）
+// Currently editing item ID (for update saves)
 let currentEditingId: number | null = null
 
-// 保存機能のための定数
+// Constants for save functionality
 const STORAGE_KEY = 'speakNote_savedSentences'
 const MAX_SAVED_ITEMS = 100
 
-// Google Apps Script翻訳APIのURL
+// Google Apps Script translation API URL
 const GAS_TRANSLATE_URL = 'https://script.google.com/macros/s/AKfycbyTSE6S8wnGYDQhQ3gKeVwIiDt3uwlxZoUBFfJ3YCrc1dCn76sQR3YJ5bM2vsuVEboc/exec'
 
-// 翻訳状態を管理
+// Translation state management
 let isTranslating = false
 
-// UI文字列の定数
+// UI text strings
 const UI_STRINGS: UIStrings = {
-  TRANSLATING: '🔄 翻訳中...',
-  TRANSLATING_PROGRESS: (current: number, total: number) => `🔄 翻訳中... (${current}/${total})`,
-  TRANSLATE: '🔁 翻訳',
-  TRANSLATION_ERROR: '翻訳中にエラーが発生しました',
-  API_NOT_SET: '翻訳APIが設定されていません。README.mdを参照してGoogle Apps Scriptを設定してください。',
-  SAVE_NEW: '💾 保存',
-  SAVE_UPDATE: '📝 更新',
-  NEW_NOTE: '📄 新規作成',
-  SAVED_NEW: '保存しました！',
-  UPDATED: '更新しました！'
+  TRANSLATING: 'Translating...',
+  TRANSLATING_PROGRESS: (current: number, total: number) => `Translating... (${current}/${total})`,
+  TRANSLATE: 'Translate',
+  TRANSLATION_ERROR: 'Translation error occurred',
+  API_NOT_SET: 'Translation API is not configured. Please check README.md for Google Apps Script setup.',
+  SAVE_NEW: 'Save',
+  SAVE_UPDATE: 'Update',
+  NEW_NOTE: 'New',
+  SAVED_NEW: 'Saved!',
+  UPDATED: 'Updated!'
 }
 
 // DOM要素の取得
@@ -67,7 +67,7 @@ function getDOMElements(): DOMElements {
 
 let elements: DOMElements
 
-// Firebase初期化とUI更新
+// Initialize FirebaseとUI更新
 async function initializeFirebase(): Promise<void> {
   try {
     authManager = new AuthManager()
@@ -95,8 +95,8 @@ async function initializeFirebase(): Promise<void> {
     
     isFirebaseReady = true
   } catch (error) {
-    console.error('Firebase初期化エラー:', error)
-    toast.error('Firebase初期化に失敗しました')
+    console.error('Firebase initialization error:', error)
+    toast.error('Firebase initialization failed')
   }
 }
 
@@ -166,7 +166,7 @@ function disableAppFunctions(): void {
   
   // ノート一覧に制限メッセージを表示
   const listContainer = document.getElementById('saved-sentences-list')!
-  listContainer.innerHTML = '<div class="no-notes">ログインしてノートを表示</div>'
+  listContainer.innerHTML = '<div class="no-notes">Please login to view notes</div>'
 }
 
 // ログイン処理
@@ -178,13 +178,13 @@ async function handleLogin(): Promise<void> {
     // ローカルストレージからの移行を提案
     const localNotes = getNotes()
     if (localNotes.length > 0) {
-      if (confirm(`ローカルに保存された${localNotes.length}件のノートをクラウドに移行しますか？`)) {
+      if (confirm(`Would you like to migrate ${localNotes.length} locally saved notes to cloud?`)) {
         await firestoreManager!.migrateFromLocalStorage()
         syncFromFirestore() // 移行後に再読み込み
       }
     }
   } catch (error) {
-    console.error('ログインエラー:', error)
+    console.error('Login error:', error)
   }
 }
 
@@ -207,8 +207,8 @@ async function syncFromFirestore(): Promise<void> {
     displayNotesFromData(cloudNotes, listContainer)
     EditingState.updateSavedSentenceHighlight()
   } catch (error) {
-    console.error('Firestore同期エラー:', error)
-    toast.error('クラウドからの同期に失敗しました')
+    console.error('Firestore sync error:', error)
+    toast.error('Failed to sync from cloud')
     // エラー時はローカルデータにフォールバック
     displayNotes()
   }
@@ -223,7 +223,7 @@ function getNotes(): Note[] {
 // 残りの関数は元のscript.jsから移植
 // ... (続く)
 
-// 初期化関数
+// Initialization function
 async function initialize() {
   console.log('Initializing application...')
   
@@ -231,29 +231,29 @@ async function initialize() {
     elements = getDOMElements()
     console.log('DOM elements obtained:', elements)
     
-    // Web Speech APIの確認
+    // Check Web Speech API
     if (!checkSpeechSynthesisSupport()) {
       toast.error('お使いのブラウザは音声合成に対応していません。')
     }
     
-    // Firebase初期化
+    // Initialize Firebase
     await initializeFirebase()
     
-    // 初期表示は認証状態で自動切り替え（updateAuthUIで処理される）
-    // 未ログインの場合は初期状態で機能無効化
+    // Initial display switches automatically based on auth state (handled in updateAuthUI)
+    // Disable functions initially if not logged in
     if (!isFirebaseReady || !authManager!.getCurrentUser()) {
       disableAppFunctions()
     }
     
     EditingState.startNew() // UIを初期状態に設定
     
-    // バージョン表示を動的に更新
+    // Update version display dynamically
     const versionElement = document.querySelector('.version')
     if (versionElement) {
       versionElement.textContent = `ver${APP_VERSION}`
     }
     
-    // イベントリスナーの設定
+    // Set up event listeners
     setupEventListeners()
     console.log('Event listeners setup completed')
   } catch (error) {
@@ -292,7 +292,7 @@ function setupEventListeners(): void {
       console.log('Japanese speak button clicked')
       const japaneseText = elements.translationText.value
       if (!japaneseText.trim()) {
-        toast.info('翻訳テキストがありません。まず翻訳ボタンを押してください。')
+        toast.info('No translation available. Please translate first.')
         return
       }
       speakJapanese(japaneseText)
@@ -345,7 +345,7 @@ async function handleTranslate(): Promise<void> {
   const input = elements.englishInput.value.trim()
   
   if (!input) {
-    toast.info('英語のテキストを入力してください')
+    toast.info('Please enter English text')
     return
   }
   
@@ -366,14 +366,17 @@ async function handleTranslate(): Promise<void> {
   elements.translateButton.style.opacity = '0.6'
   
   try {
-    const lines = input.split('\n').filter(line => line.trim())
+    const lines = input.split('\n') // filterを削除して空行も含める
+    const nonEmptyLines = lines.filter(line => line.trim()).length
     translationLines = [] // リセット
+    let translatedCount = 0
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim()
       if (line) {
-        // 進捗表示更新
-        elements.translateButton.textContent = UI_STRINGS.TRANSLATING_PROGRESS(i + 1, lines.length)
+        translatedCount++
+        // 進捗表示更新（空行以外の行数でカウント）
+        elements.translateButton.textContent = UI_STRINGS.TRANSLATING_PROGRESS(translatedCount, nonEmptyLines)
         
         // 翻訳実行
         const translation = await translateWithGoogleAPI(line)
@@ -382,11 +385,11 @@ async function handleTranslate(): Promise<void> {
         // リアルタイム表示更新
         elements.translationText.value = translationLines.join('\n')
       } else {
-        translationLines.push('') // 空行はそのまま
+        translationLines.push('') // 空行はそのまま保持
       }
     }
     
-    toast.success('翻訳が完了しました')
+    toast.success('Translation completed')
   } catch (error) {
     console.error('Translation error:', error)
     toast.error(UI_STRINGS.TRANSLATION_ERROR)
@@ -402,8 +405,8 @@ async function handleTranslate(): Promise<void> {
 // Google翻訳APIを使用した翻訳関数
 async function translateWithGoogleAPI(text: string): Promise<string> {
   if (!GAS_TRANSLATE_URL) {
-    console.warn('Google Apps Script URLが設定されていません')
-    return '翻訳APIが設定されていません'
+    console.warn('Google Apps Script URL not configured')
+    return 'Translation API not configured'
   }
 
   try {
@@ -416,11 +419,11 @@ async function translateWithGoogleAPI(text: string): Promise<string> {
       return data.text
     } else {
       console.error('Translation API error:', data.error)
-      return '翻訳エラー: ' + data.error
+      return 'Translation error: ' + data.error
     }
   } catch (error) {
     console.error('Network error:', error)
-    return '通信エラー: 翻訳できませんでした'
+    return 'Network error: Translation failed'
   }
 }
 
@@ -430,7 +433,7 @@ async function handleSave(): Promise<void> {
   const translationsArray = translationLines
   
   if (!englishText) {
-    toast.info('英語のテキストを入力してください')
+    toast.info('Please enter English text')
     return
   }
   
@@ -458,7 +461,7 @@ async function handleSave(): Promise<void> {
     }
   } catch (error) {
     console.error('Save error:', error)
-    toast.error('保存に失敗しました')
+    toast.error('Save failed')
   }
 }
 
@@ -489,8 +492,8 @@ async function saveNote(text: string, translations: string[] = []): Promise<Save
         return { type: 'saved', id: noteData.id }
       }
     } catch (error) {
-      console.error('Firestore保存エラー:', error)
-      toast.error('クラウド保存に失敗しました。ローカルに保存します。')
+      console.error('Firestore save error:', error)
+      toast.error('Cloud save failed. Saving locally.')
       // Firestoreエラー時はlocalStorageにフォールバック
     }
   }
@@ -523,12 +526,12 @@ async function saveNote(text: string, translations: string[] = []): Promise<Save
     
     // 翻訳内容が同じ場合のみ重複エラー
     if (JSON.stringify(existingTranslations) === JSON.stringify(cleanTranslations)) {
-      toast.info('このノートは既に保存されています。')
+      toast.info('This note is already saved.')
       return false
     }
     
     // 翻訳が異なる場合は確認ダイアログを表示
-    if (confirm('同じ英文のノートですが、翻訳が異なります。新しい翻訳で上書きしますか？')) {
+    if (confirm('Same English text but different translation. Overwrite with new translation?')) {
       // 既存のアイテムを削除
       const index = notes.findIndex(item => item.id === existingItem.id)
       if (index !== -1) {
@@ -583,8 +586,8 @@ async function deleteNote(id: number): Promise<void> {
       await firestoreManager.deleteNote(id)
       return
     } catch (error) {
-      console.error('Firestore削除エラー:', error)
-      toast.error('クラウドでの削除に失敗しました。ローカルのみ削除します。')
+      console.error('Firestore delete error:', error)
+      toast.error('Cloud delete failed. Deleting locally only.')
     }
   }
   
@@ -604,7 +607,7 @@ function displayNotes(): void {
 // 汎用的なノート表示関数
 function displayNotesFromData(notes: Note[], container: HTMLElement): void {
   if (notes.length === 0) {
-    container.innerHTML = '<div class="no-notes">ノートがありません</div>'
+    container.innerHTML = '<div class="no-notes">No notes available</div>'
     return
   }
   
@@ -628,11 +631,12 @@ function displayNotesFromData(notes: Note[], container: HTMLElement): void {
     englishDiv.textContent = displayEnglish
     contentDiv.appendChild(englishDiv)
     
-    // 翻訳がある場合は表示（改行をスペースに変換して1行表示）
+    // 翻訳がある場合は表示（空行を保持して対応関係を明確にする）
     if (item.translations && item.translations.length > 0) {
       const japaneseDiv = document.createElement('div')
       japaneseDiv.className = 'sentence-japanese'
-      const displayJapanese = item.translations.join(' ')
+      // 空行も含めて結合（ただし、表示時は空行を適切に処理）
+      const displayJapanese = item.translations.join(' ').replace(/\s{2,}/g, ' ').trim()
       japaneseDiv.textContent = displayJapanese
       contentDiv.appendChild(japaneseDiv)
     }
@@ -657,7 +661,7 @@ function displayNotesFromData(notes: Note[], container: HTMLElement): void {
     deleteButton.className = 'action-button delete-action'
     deleteButton.onclick = async (event) => {
       event.stopPropagation() // ノート選択イベントを防ぐ
-      if (confirm('このノートを削除しますか？')) {
+      if (confirm('Delete this note?')) {
         await deleteNote(item.id)
         if (isFirebaseReady && firestoreManager && authManager!.getCurrentUser()) {
           await syncFromFirestore()
@@ -670,7 +674,7 @@ function displayNotesFromData(notes: Note[], container: HTMLElement): void {
           handleClear()
         }
         
-        toast.success('ノートを削除しました')
+        toast.success('Note deleted')
       }
     }
     buttonsDiv.appendChild(deleteButton)
@@ -755,10 +759,15 @@ async function handleKeyboardEvents(event: KeyboardEvent): Promise<void> {
         
         try {
           const translation = await translateWithGoogleAPI(currentLine.trim())
-          // 翻訳結果を対応する行に設定
-          while (translationLines.length <= lineNumber) {
+          // 現在の全テキストを行ごとに分割（空行も含める）
+          const allLines = elements.englishInput.value.split('\n')
+          
+          // translationLinesを全体の行数に合わせて調整
+          while (translationLines.length < allLines.length) {
             translationLines.push('')
           }
+          
+          // 対応する行に翻訳結果を設定
           translationLines[lineNumber] = translation
           updateTranslationDisplay()
         } catch (error) {

@@ -56,30 +56,36 @@ h1 {
 }
 
 .auth-button {
-    padding: 8px 16px;
+    padding: 10px 20px;
     font-size: 14px;
     border: none;
-    border-radius: 20px;
+    border-radius: 25px;
     cursor: pointer;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: white;
-    background-color: #4285f4;
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
 }
 
 .auth-button:hover {
-    background-color: #3367d6;
-    transform: translateY(-1px);
+    background: linear-gradient(135deg, #5a6271 0%, #374151 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(107, 114, 128, 0.2);
 }
 
 .auth-button.logout {
-    background-color: #dc3545;
-    padding: 6px 12px;
+    background: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%);
+    padding: 8px 16px;
     font-size: 12px;
 }
 
 .auth-button.logout:hover {
-    background-color: #c82333;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.2);
 }
 
 .user-info {
@@ -114,30 +120,62 @@ h1 {
     max-width: none;
     margin: 0;
     display: flex;
-    gap: 15px;
+    gap: 20px;
     align-items: flex-start;
     height: calc(100vh - 120px);
 }
 
 .notebook-side {
     flex: 1;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background: linear-gradient(135deg, #fefcf3 0%, #faf7ed 100%);
+    padding: 25px; /* 均等なパディング */
+    border-radius: 8px;
+    box-shadow: 
+        0 4px 15px rgba(0, 0, 0, 0.08),
+        inset 0 1px 3px rgba(0, 0, 0, 0.02);
     height: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* ノートの右端に微妙な影を追加 */
+.notebook-side::after {
+    content: '';
+    position: absolute;
+    right: -3px;
+    top: 5px;
+    bottom: 5px;
+    width: 8px;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.02), transparent);
+    border-radius: 0 8px 8px 0;
+    pointer-events: none;
 }
 
 .notebook-side h2 {
     margin-bottom: 20px;
     color: #2c3e50;
-    font-size: 1.8rem;
-    text-align: center;
-    border-bottom: 3px solid #ecf0f1;
-    padding-bottom: 12px;
-    font-weight: 700;
+    font-size: 1.6rem;
+    text-align: left;
+    font-weight: 600;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    padding-bottom: 8px;
+    margin-left: 0;
+    position: relative;
+    letter-spacing: 0.5px;
+}
+
+/* 見出しの下に手書き風のアンダーライン */
+.notebook-side h2::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 0;
+    width: 60%;
+    height: 2px;
+    background: linear-gradient(to right, rgba(52, 152, 219, 0.6) 0%, rgba(52, 152, 219, 0.3) 70%, transparent 100%);
+    border-radius: 1px;
 }
 
 #input-area {
@@ -156,40 +194,42 @@ h1 {
 
 #translation-text {
     width: 100%;
-    background-color: #f8f9fa;
-    border: 3px solid #e1e8ed;
-    border-radius: 10px;
-    padding: 20px;
+    background: transparent;
+    border: none;
+    padding: 0;
     margin-bottom: 15px;
-    font-size: 22px;
-    line-height: 1.6;
+    font-size: 18px;
+    line-height: 1.6; /* 自然な行間 */
     color: #555;
     font-style: italic;
     resize: none;
     flex: 1;
-    font-family: inherit;
+    font-family: 'Georgia', 'Times New Roman', serif;
     cursor: default;
-    font-weight: 500;
+    font-weight: 400;
+    outline: none;
+    letter-spacing: 0.2px;
 }
 
 #english-input {
     width: 100%;
-    padding: 20px;
-    font-size: 24px;
-    border: 3px solid #e1e8ed;
-    border-radius: 10px;
+    padding: 0;
+    font-size: 20px;
+    border: none;
     outline: none;
-    transition: border-color 0.3s ease;
-    font-family: inherit;
+    font-family: 'Georgia', 'Times New Roman', serif;
     resize: none;
     flex: 1;
-    line-height: 1.6;
+    line-height: 1.6; /* 自然な行間 */
+    color: #2c3e50;
+    background: transparent;
+    letter-spacing: 0.3px;
     font-weight: 500;
 }
 
-#english-input:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+#english-input::placeholder {
+    color: rgba(44, 62, 80, 0.4);
+    font-style: italic;
 }
 
 .button-group {
@@ -200,71 +240,87 @@ h1 {
 }
 
 #speak-button, #translate-button, #save-button, #speak-japanese-button, #clear-button {
-    padding: 16px 20px;
-    font-size: 20px;
+    padding: 14px 24px;
+    font-size: 16px;
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 25px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    font-family: inherit;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     flex: 1;
-    max-width: 180px;
+    max-width: 160px;
     font-weight: 600;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 #speak-button {
-    background-color: #3498db;
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
 }
 
 #speak-button:hover {
-    background-color: #2980b9;
+    background: linear-gradient(135deg, #5a6271 0%, #374151 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(107, 114, 128, 0.2);
 }
 
 #translate-button {
-    background-color: #27ae60;
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
 }
 
 #translate-button:hover {
-    background-color: #229954;
+    background: linear-gradient(135deg, #52637a 0%, #334155 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(100, 116, 139, 0.2);
 }
 
 #translate-button:disabled {
-    background-color: #95a5a6;
+    background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
     cursor: not-allowed;
     transform: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 #translate-button:disabled:hover {
-    background-color: #95a5a6;
+    background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+    transform: none;
 }
 
 #speak-japanese-button {
-    background-color: #e67e22;
+    background: linear-gradient(135deg, #78716c 0%, #57534e 100%);
 }
 
 #speak-japanese-button:hover {
-    background-color: #d35400;
+    background: linear-gradient(135deg, #6b645f 0%, #44403c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(120, 113, 108, 0.2);
 }
 
 #save-button {
-    background-color: #e74c3c;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
 }
 
 #save-button:hover {
-    background-color: #c0392b;
+    background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(5, 150, 105, 0.2);
 }
 
 #clear-button {
-    background-color: #95a5a6;
+    background: linear-gradient(135deg, #7c2d12 0%, #dc2626 100%);
 }
 
 #clear-button:hover {
-    background-color: #7f8c8d;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(220, 38, 38, 0.2);
 }
 
-#speak-button:active, #translate-button:active, #save-button:active, #clear-button:active {
-    transform: translateY(1px);
+#speak-button:active, #translate-button:active, #save-button:active, #speak-japanese-button:active, #clear-button:active {
+    transform: translateY(0px);
 }
 
 /* ノート一覧 */
@@ -471,14 +527,20 @@ h1 {
     
     #notebook-container {
         flex-direction: column;
-        gap: 10px;
+        gap: 15px;
         height: calc(100vh - 100px);
     }
     
     .notebook-side {
-        padding: 15px;
+        padding: 20px; /* モバイル用の均等なパディング */
         height: auto;
         flex: 1;
+        background: linear-gradient(135deg, #fefcf3 0%, #faf7ed 100%);
+    }
+    
+    #english-input, #translation-text {
+        font-size: 17px;
+        line-height: 1.5; /* モバイル用の自然な行間 */
     }
     
     .notebook-side h2 {
