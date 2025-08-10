@@ -21,18 +21,22 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 2px;
     position: relative;
-    padding: 0 20px;
+    padding: 2px 20px;
 }
 
 h1 {
     color: #2c3e50;
-    font-size: 2.8rem;
+    font-size: 2.4rem;
     font-weight: 700;
     margin: 0;
     flex: 1;
     text-align: center;
+    font-family: 'Brush Script MT', 'Bradley Hand', 'Marker Felt', cursive;
+    text-shadow: 1px 1px 2px rgba(44, 62, 80, 0.1);
+    letter-spacing: 1px;
+    transform: rotate(-1deg);
 }
 
 .header-right {
@@ -120,37 +124,50 @@ h1 {
     max-width: none;
     margin: 0;
     display: flex;
-    gap: 20px;
+    gap: 2px;
     align-items: flex-start;
-    height: calc(100vh - 120px);
+    height: calc(100vh - 80px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .notebook-side {
     flex: 1;
     background: linear-gradient(135deg, #fefcf3 0%, #faf7ed 100%);
-    padding: 25px; /* 均等なパディング */
-    border-radius: 8px;
-    box-shadow: 
-        0 4px 15px rgba(0, 0, 0, 0.08),
-        inset 0 1px 3px rgba(0, 0, 0, 0.02);
+    padding: 25px;
+    border-radius: 0;
     height: 100%;
     display: flex;
     flex-direction: column;
     position: relative;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: none;
 }
 
-/* ノートの右端に微妙な影を追加 */
-.notebook-side::after {
+/* 左ページ（英語）に右側の綴じ部分の影 */
+#english-side::after {
     content: '';
     position: absolute;
-    right: -3px;
-    top: 5px;
-    bottom: 5px;
-    width: 8px;
-    background: linear-gradient(to right, rgba(0, 0, 0, 0.02), transparent);
-    border-radius: 0 8px 8px 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    background: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.06) 50%, rgba(0, 0, 0, 0.12) 100%);
     pointer-events: none;
+    z-index: 1;
+}
+
+/* 右ページ（日本語）に左側の綴じ部分の影 */
+#japanese-side::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    background: linear-gradient(to left, transparent 0%, rgba(0, 0, 0, 0.06) 50%, rgba(0, 0, 0, 0.12) 100%);
+    pointer-events: none;
+    z-index: 1;
 }
 
 .notebook-side h2 {
@@ -489,15 +506,16 @@ h1 {
     }
     
     .header {
-        margin-bottom: 15px;
-        padding: 0 10px;
+        margin-bottom: 2px;
+        padding: 2px 10px;
         flex-direction: column;
-        gap: 10px;
+        gap: 2px;
         align-items: center;
     }
     
     h1 {
-        font-size: 2.2rem;
+        font-size: 2.0rem;
+        transform: rotate(-0.5deg);
     }
     
     .header-right {
@@ -528,14 +546,28 @@ h1 {
     #notebook-container {
         flex-direction: column;
         gap: 15px;
-        height: calc(100vh - 100px);
+        height: calc(100vh - 65px);
     }
     
     .notebook-side {
-        padding: 20px; /* モバイル用の均等なパディング */
+        padding: 20px;
         height: auto;
         flex: 1;
         background: linear-gradient(135deg, #fefcf3 0%, #faf7ed 100%);
+        border-radius: 12px;
+    }
+    
+    /* モバイルでは見開き効果を無効化 */
+    #english-side::after,
+    #japanese-side::before {
+        display: none;
+    }
+    
+    #notebook-container {
+        gap: 15px;
+        box-shadow: none;
+        border-radius: 0;
+        overflow: visible;
     }
     
     #english-input, #translation-text {
