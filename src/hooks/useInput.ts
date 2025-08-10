@@ -44,7 +44,7 @@ export function useInput(): UseInputReturn {
         const lastWord = getLastWord(currentLine)
         if (lastWord) {
           window.speechSynthesis.cancel()
-          let processedText = lastWord === 'I' ? 'i' : lastWord
+          const processedText = lastWord === 'I' ? 'i' : lastWord
           const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
           window.speechSynthesis.speak(utterance)
         }
@@ -55,7 +55,7 @@ export function useInput(): UseInputReturn {
         const currentLine = getCurrentLine(textarea)
         if (currentLine.trim()) {
           window.speechSynthesis.cancel()
-          let processedText = currentLine.trim()
+          const processedText = currentLine.trim()
           const config = punctuation === '?' ? SPEECH_CONFIG.ENGLISH_QUESTION : SPEECH_CONFIG.ENGLISH
           const utterance = createUtterance(processedText, config)
           window.speechSynthesis.speak(utterance)

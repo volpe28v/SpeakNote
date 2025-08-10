@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useApp } from '../../contexts/AppContext'
 import { speakMultipleLines } from '../../lib/speech'
 import { toast } from '../../lib/toast'
+import type { Note } from '../../types'
 
 function NotesList() {
   const { auth, translation, notes } = useApp()
@@ -15,7 +16,7 @@ function NotesList() {
     }
   }, [user, authManager, firestoreManager, syncFromFirestore])
 
-  const handleNoteClick = (note: any) => {
+  const handleNoteClick = (note: Note) => {
     // この機能は NotebookContainer 側で処理
     // ここではクリック時の処理をイベント経由で通知する必要がある
     if (note.translations) {

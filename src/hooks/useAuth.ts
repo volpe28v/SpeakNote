@@ -79,7 +79,7 @@ export function useAuth(): UseAuthReturn {
   }
 }
 
-function getLocalNotes(): any[] {
+function getLocalNotes(): unknown[] {
   const saved = localStorage.getItem('speakNote_savedSentences')
   return saved ? JSON.parse(saved) : []
 }
