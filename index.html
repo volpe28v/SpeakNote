@@ -7,67 +7,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="header">
-        <h1>SpeakNote</h1>
-        <div class="header-right">
-            <span class="version">ver1.1.0</span>
-            <div id="auth-container">
-                <button id="login-button" class="auth-button">Sign In</button>
-                <div id="user-info" class="user-info" style="display: none;">
-                    <img id="user-avatar" class="user-avatar" src="" alt="">
-                    <span id="user-name" class="user-name"></span>
-                    <button id="logout-button" class="auth-button logout">Sign Out</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Login required message -->
-    <div id="login-required-message" class="login-required-message" style="display: none;">
-        <div class="login-prompt">
-            <h3>🔐 Login Required</h3>
-            <p>Please sign in with your Google account to use SpeakNote</p>
-            <button id="login-prompt-button" class="login-prompt-button">Sign in with Google</button>
-        </div>
-    </div>
+    <div id="root"></div>
 
-    <div id="notebook-container">
-        <div id="english-side" class="notebook-side">
-            <h2>English</h2>
-            <div id="input-area">
-                <textarea id="english-input" placeholder="Type English here (Enter for translation)" autofocus rows="8"></textarea>
-                <div class="button-group">
-                    <button id="speak-button">Speak</button>
-                    <button id="save-button">Save</button>
-                    <button id="clear-button">New</button>
-                </div>
-            </div>
-        </div>
-        
-        <div id="japanese-side" class="notebook-side">
-            <h2>Japanese</h2>
-            <div id="translation-area">
-                <textarea id="translation-text" readonly placeholder="Japanese translation will appear here" rows="8"></textarea>
-                <div class="button-group">
-                    <button id="translate-button">Translate</button>
-                    <button id="speak-japanese-button">Speak JP</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notes list -->
-    <div id="saved-sentences-container">
-        <h2>Notes</h2>
-        <div id="saved-sentences-list">
-            <!-- Notes will appear here -->
-        </div>
-    </div>
-
-    <!-- Toast notifications -->
-    <div id="toast-container"></div>
-
-    <!-- Vite entry point -->
-    <script type="module" src="/src/main.ts"></script>
+    <!-- React Vite entry point -->
+    <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

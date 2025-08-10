@@ -2,20 +2,24 @@
 import type { ToastType } from '@/types'
 
 class ToastManager {
-  private container: HTMLElement
-
-  constructor() {
-    this.container = document.getElementById('toast-container')!
+  private getContainer(): HTMLElement | null {
+    return document.getElementById('toast-container')
   }
 
   show(message: string, type: ToastType = 'info', duration = 3000): void {
+    const container = this.getContainer()
+    if (!container) {
+      console.warn('Toast container not found')
+      return
+    }
+
     // トースト要素を作成
     const toast = document.createElement('div')
     toast.className = `toast ${type}`
     toast.textContent = message
     
     // コンテナに追加
-    this.container.appendChild(toast)
+    container.appendChild(toast)
     
     // アニメーション開始
     setTimeout(() => {
@@ -26,8 +30,9 @@ class ToastManager {
     setTimeout(() => {
       toast.classList.remove('show')
       setTimeout(() => {
-        if (this.container.contains(toast)) {
-          this.container.removeChild(toast)
+        const currentContainer = this.getContainer()
+        if (currentContainer && currentContainer.contains(toast)) {
+          currentContainer.removeChild(toast)
         }
       }, 300)
     }, duration)

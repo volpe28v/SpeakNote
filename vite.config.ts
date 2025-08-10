@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  plugins: [react()],
   root: '.',
   publicDir: 'public',
   build: {
@@ -12,8 +14,15 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './index.html'
+      },
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          firebase: ['firebase/auth', 'firebase/firestore', 'firebase/app']
+        }
       }
-    }
+    },
+    chunkSizeWarningLimit: 1000
   },
   server: {
     port: 3000,
