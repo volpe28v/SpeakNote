@@ -4,6 +4,7 @@ firebase-config.dev.js
 .env
 .env.local
 .env.example
+.env.local.example
 .env.production
 .env.production.local
 
