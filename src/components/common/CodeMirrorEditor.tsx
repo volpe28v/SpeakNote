@@ -238,9 +238,7 @@ function CodeMirrorEditor({
   const editorViewRef = React.useRef<EditorView | null>(null)
 
   const extensions = React.useMemo(() => {
-    console.log('Creating extensions, onAutoTranslation:', !!onAutoTranslation)
     const speechKeymap = createSpeechKeymap(onAutoTranslation)
-    console.log('Speech keymap created:', speechKeymap)
 
     const baseExtensions = [
       speechKeymap, // キーマップを最初に配置して優先度を高くする
@@ -256,7 +254,11 @@ function CodeMirrorEditor({
     ]
 
     // ハイライトエクステンションを追加
-    if (highlightedLineIndex !== null && highlightedLineIndex !== undefined && highlightedLineIndex >= 0) {
+    if (
+      highlightedLineIndex !== null &&
+      highlightedLineIndex !== undefined &&
+      highlightedLineIndex >= 0
+    ) {
       baseExtensions.push(createHighlightExtension(highlightedLineIndex))
     }
 
@@ -265,7 +267,12 @@ function CodeMirrorEditor({
 
   // ハイライトされた行が変更された時にスクロール
   React.useEffect(() => {
-    if (editorViewRef.current && highlightedLineIndex !== null && highlightedLineIndex !== undefined && highlightedLineIndex >= 0) {
+    if (
+      editorViewRef.current &&
+      highlightedLineIndex !== null &&
+      highlightedLineIndex !== undefined &&
+      highlightedLineIndex >= 0
+    ) {
       const view = editorViewRef.current
       const doc = view.state.doc
 
@@ -303,11 +310,19 @@ function CodeMirrorEditor({
           }
 
           // .cm-line クラスの要素を見つける
-          while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE && !(currentElement as Element).classList?.contains('cm-line')) {
+          while (
+            currentElement &&
+            currentElement.nodeType === Node.ELEMENT_NODE &&
+            !(currentElement as Element).classList?.contains('cm-line')
+          ) {
             currentElement = (currentElement as Element).parentElement
           }
 
-          if (currentElement && currentElement.nodeType === Node.ELEMENT_NODE && (currentElement as Element).classList.contains('cm-line')) {
+          if (
+            currentElement &&
+            currentElement.nodeType === Node.ELEMENT_NODE &&
+            (currentElement as Element).classList.contains('cm-line')
+          ) {
             const currentLine = currentElement.textContent || ''
             console.log('Current line from DOM element:', currentLine)
 

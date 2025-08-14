@@ -20,6 +20,11 @@ function NotebookContainer() {
   const { hasUnsavedChanges, markAsSaved, markAsModified } = unsavedChanges
 
   const [englishText, setEnglishText] = useState('')
+
+  // englishTextの変化をログ出力
+  useEffect(() => {
+    console.log('NotebookContainer: englishText changed to:', englishText)
+  }, [englishText])
   const [translationText, setTranslationText] = useState('')
   const [originalContent, setOriginalContent] = useState('')
   const [selectedText, setSelectedText] = useState('')
@@ -65,6 +70,9 @@ function NotebookContainer() {
   useEffect(() => {
     const handleNoteSelected = (event: CustomEvent) => {
       const note = event.detail
+      console.log('NotebookContainer: Received noteSelected event with note:', note)
+      console.log('NotebookContainer: Setting englishText to:', note.text)
+
       setEnglishText(note.text)
       setOriginalContent(note.text)
       if (note.translations) {
@@ -74,6 +82,8 @@ function NotebookContainer() {
       }
       setCurrentEditingId(note.id)
       markAsSaved()
+
+      console.log('NotebookContainer: Note data updated successfully')
     }
 
     window.addEventListener('noteSelected', handleNoteSelected as EventListener)
