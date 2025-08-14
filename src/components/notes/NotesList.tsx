@@ -59,7 +59,6 @@ function NotesList() {
   if (!user) {
     return (
       <div id="saved-sentences-container" className="disabled-overlay">
-        <h2>Notes</h2>
         <div id="saved-sentences-list">
           <div className="no-notes">Please login to view notes</div>
         </div>
@@ -69,7 +68,6 @@ function NotesList() {
 
   return (
     <div id="saved-sentences-container">
-      <h2>Notes</h2>
       <div id="saved-sentences-list">
         {notesList.length === 0 ? (
           <div className="no-notes">No notes available</div>

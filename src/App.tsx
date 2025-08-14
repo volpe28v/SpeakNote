@@ -40,7 +40,7 @@ function App() {
               className={`tab-button ${activeTab === 'notes-list' ? 'active' : ''}`}
               onClick={() => setActiveTab('notes-list')}
             >
-              Notes
+              Index
             </button>
           </div>
           <div className="tab-content">
