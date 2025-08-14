@@ -1,6 +1,5 @@
 import React from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { javascript } from '@codemirror/lang-javascript'
 import { EditorView, Decoration, keymap } from '@codemirror/view'
 import { EditorState, Extension } from '@codemirror/state'
 import { speakEnglish, createUtterance, SPEECH_CONFIG } from '../../lib/speech'
@@ -30,12 +29,12 @@ const createHighlightExtension = (lineIndex: number | null): Extension => {
   return EditorView.decorations.of((view) => {
     const decorations = []
     const doc = view.state.doc
-    
+
     if (lineIndex < doc.lines) {
       const line = doc.line(lineIndex + 1) // CodeMirrorは1ベース
       decorations.push(highlightLineDecoration.range(line.from))
     }
-    
+
     return Decoration.set(decorations)
   })
 }
@@ -130,7 +129,7 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
         const currentLine = getCurrentLine(view.state)
         console.log('Enter pressed, currentLine:', currentLine)
         console.log('onAutoTranslation exists:', !!onAutoTranslation)
-        
+
         // 改行処理の前に音声と翻訳を実行
         if (currentLine.trim()) {
           speakEnglish(currentLine.trim(), false)
@@ -138,20 +137,22 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
             console.log('Calling onAutoTranslation')
             // 非同期処理を適切に処理
             setTimeout(() => {
-              onAutoTranslation().then(() => {
-                console.log('Auto translation completed')
-              }).catch(error => {
-                console.error('Auto translation error:', error)
-              })
+              onAutoTranslation()
+                .then(() => {
+                  console.log('Auto translation completed')
+                })
+                .catch((error) => {
+                  console.error('Auto translation error:', error)
+                })
             }, 100)
           }
         }
-        
+
         // デフォルトの改行動作を実行
         view.dispatch({
-          changes: { from: view.state.selection.main.head, insert: '\n' }
+          changes: { from: view.state.selection.main.head, insert: '\n' },
         })
-        
+
         return true // イベントを処理済みとする
       },
     },
@@ -220,7 +221,7 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
       },
     },
   ])
-  
+
   return keymapExtension
 }
 
@@ -234,93 +235,126 @@ function CodeMirrorEditor({
   disabled = false,
   className = '',
 }: CodeMirrorEditorProps) {
+  const editorViewRef = React.useRef<EditorView | null>(null)
+
   const extensions = React.useMemo(() => {
     console.log('Creating extensions, onAutoTranslation:', !!onAutoTranslation)
     const speechKeymap = createSpeechKeymap(onAutoTranslation)
     console.log('Speech keymap created:', speechKeymap)
-    
+
     const baseExtensions = [
       speechKeymap, // キーマップを最初に配置して優先度を高くする
       noteTheme,
       EditorView.lineWrapping,
       EditorState.readOnly.of(disabled),
+      // EditorViewの参照を保持するためのエクステンション
+      EditorView.updateListener.of((update) => {
+        if (update.view !== editorViewRef.current) {
+          editorViewRef.current = update.view
+        }
+      }),
     ]
 
     // ハイライトエクステンションを追加
-    if (highlightedLineIndex !== null && highlightedLineIndex >= 0) {
+    if (highlightedLineIndex !== null && highlightedLineIndex !== undefined && highlightedLineIndex >= 0) {
       baseExtensions.push(createHighlightExtension(highlightedLineIndex))
     }
 
     return baseExtensions
   }, [highlightedLineIndex, disabled, onAutoTranslation])
 
+  // ハイライトされた行が変更された時にスクロール
+  React.useEffect(() => {
+    if (editorViewRef.current && highlightedLineIndex !== null && highlightedLineIndex !== undefined && highlightedLineIndex >= 0) {
+      const view = editorViewRef.current
+      const doc = view.state.doc
+
+      // 指定された行番号が存在するかチェック
+      if (highlightedLineIndex < doc.lines) {
+        const line = doc.line(highlightedLineIndex + 1) // CodeMirrorは1ベース
+
+        // ハイライトされた行を画面内にスクロール
+        view.dispatch({
+          effects: EditorView.scrollIntoView(line.from, {
+            y: 'center', // 画面の中央に配置
+            yMargin: 50, // 上下に50pxのマージン
+          }),
+        })
+      }
+    }
+  }, [highlightedLineIndex])
+
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       console.log('React keyDown event:', event.key)
-      
+
       if (event.key === 'Enter') {
         console.log('Enter key detected in React handler')
-        
+
         // ドキュメントのセレクションから現在の行を正確に取得
         const selection = window.getSelection()
         if (selection && selection.rangeCount > 0) {
           const range = selection.getRangeAt(0)
-          
+
           // カーソル位置を含む行要素を探す
-          let currentElement = range.startContainer
+          let currentElement: Node | null = range.startContainer
           if (currentElement.nodeType === Node.TEXT_NODE) {
             currentElement = currentElement.parentElement
           }
-          
+
           // .cm-line クラスの要素を見つける
-          while (currentElement && !currentElement.classList?.contains('cm-line')) {
-            currentElement = currentElement.parentElement
+          while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE && !(currentElement as Element).classList?.contains('cm-line')) {
+            currentElement = (currentElement as Element).parentElement
           }
-          
-          if (currentElement && currentElement.classList.contains('cm-line')) {
+
+          if (currentElement && currentElement.nodeType === Node.ELEMENT_NODE && (currentElement as Element).classList.contains('cm-line')) {
             const currentLine = currentElement.textContent || ''
             console.log('Current line from DOM element:', currentLine)
-            
+
             if (currentLine.trim()) {
               console.log('Speaking and translating DOM line:', currentLine.trim())
               speakEnglish(currentLine.trim(), false)
               if (onAutoTranslation) {
                 console.log('Calling onAutoTranslation from DOM handler')
                 setTimeout(() => {
-                  onAutoTranslation().then(() => {
-                    console.log('Auto translation completed from DOM handler')
-                  }).catch(error => {
-                    console.error('Auto translation error from DOM handler:', error)
-                  })
+                  onAutoTranslation()
+                    .then(() => {
+                      console.log('Auto translation completed from DOM handler')
+                    })
+                    .catch((error) => {
+                      console.error('Auto translation error from DOM handler:', error)
+                    })
                 }, 100)
               }
               return
             }
           }
         }
-        
+
         // フォールバック: value から最後の非空行を取得
         const lines = value.split('\n')
-        const lastNonEmptyLine = lines.filter(line => line.trim()).pop() || ''
-        
+        const lastNonEmptyLine = lines.filter((line) => line.trim()).pop() || ''
+
         console.log('Fallback: Last non-empty line:', lastNonEmptyLine)
-        
+
         if (lastNonEmptyLine.trim()) {
           console.log('Fallback: Speaking and translating:', lastNonEmptyLine.trim())
           speakEnglish(lastNonEmptyLine.trim(), false)
           if (onAutoTranslation) {
             console.log('Fallback: Calling onAutoTranslation')
             setTimeout(() => {
-              onAutoTranslation().then(() => {
-                console.log('Fallback: Auto translation completed')
-              }).catch(error => {
-                console.error('Fallback: Auto translation error:', error)
-              })
+              onAutoTranslation()
+                .then(() => {
+                  console.log('Fallback: Auto translation completed')
+                })
+                .catch((error) => {
+                  console.error('Fallback: Auto translation error:', error)
+                })
             }, 100)
           }
         }
       }
-      
+
       if (onKeyDown) {
         onKeyDown(event)
       }

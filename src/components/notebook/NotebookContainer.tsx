@@ -6,7 +6,7 @@ import { getSelectedLineNumber } from '../../utils/lineHighlight'
 import CodeMirrorEditor from '../common/CodeMirrorEditor'
 
 function NotebookContainer() {
-  const { auth, translation, notes, input, unsavedChanges } = useApp()
+  const { auth, translation, notes, unsavedChanges } = useApp()
   const { user, authManager, firestoreManager } = auth
   const {
     translationLines,
@@ -16,7 +16,7 @@ function NotebookContainer() {
     clearTranslationLines,
   } = translation
   const { isSaving, saveNote, setCurrentEditingId, syncFromFirestore } = notes
-  const { handleKeyboardEvent } = input
+  // const { handleKeyboardEvent } = input // CodeMirrorで処理するため不要
   const { hasUnsavedChanges, markAsSaved, markAsModified } = unsavedChanges
 
   const [englishText, setEnglishText] = useState('')
@@ -146,7 +146,7 @@ function NotebookContainer() {
     }, 100)
   }
 
-  const handleKeyDown = async (event: React.KeyboardEvent) => {
+  const handleKeyDown = async () => {
     // CodeMirrorでは独自のキーマップで処理するため、ここでは何もしない
   }
 
@@ -157,10 +157,10 @@ function NotebookContainer() {
     if (selectedText && translationText.includes(selectedText)) {
       setSelectedText(selectedText)
       setShowSelectionButton(true)
-      
+
       // 日本語選択部分の行数を取得
       const lineNumber = getSelectedLineNumber('translation-text')
-      
+
       // 対応する英語行をハイライト
       setHighlightedLineIndex(lineNumber)
     } else {
