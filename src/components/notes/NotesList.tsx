@@ -5,14 +5,22 @@ import { toast } from '../../lib/toast'
 import type { Note } from '../../types'
 
 function NotesList() {
-  const { auth, translation, notes } = useApp()
+  const { auth, translation, notes, unsavedChanges } = useApp()
   const { user, authManager, firestoreManager } = auth
   const { setTranslationLines } = translation
   const { notes: notesList, currentEditingId, deleteNote, setCurrentEditingId } = notes
+  const { hasUnsavedChanges } = unsavedChanges
 
   // NotebookContainerで既に同期されるため、こちらでは個別の同期処理は不要
 
   const handleNoteClick = (note: Note) => {
+    // 未保存の変更がある場合は確認
+    if (hasUnsavedChanges) {
+      if (!confirm('There are unsaved changes. Do you want to discard them and load this note?')) {
+        return
+      }
+    }
+
     // この機能は NotebookContainer 側で処理
     // ここではクリック時の処理をイベント経由で通知する必要がある
     if (note.translations) {

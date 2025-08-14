@@ -102,6 +102,15 @@ function NotebookContainer() {
   }
 
   const handleClear = () => {
+    // 未保存の変更がある場合は確認
+    if (hasUnsavedChanges) {
+      if (
+        !confirm('There are unsaved changes. Do you want to discard them and create a new note?')
+      ) {
+        return
+      }
+    }
+
     setEnglishText('')
     setTranslationText('')
     clearTranslationLines()
