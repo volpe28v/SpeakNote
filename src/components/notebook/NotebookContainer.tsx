@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { useApp } from '../../contexts/AppContext'
 import { speakEnglish, speakJapanese } from '../../lib/speech'
 import { toast } from '../../lib/toast'
+import { getSelectedLineNumber } from '../../utils/lineHighlight'
+import CodeMirrorEditor from '../common/CodeMirrorEditor'
 
 function NotebookContainer() {
   const { auth, translation, notes, input, unsavedChanges } = useApp()
@@ -22,6 +24,7 @@ function NotebookContainer() {
   const [originalContent, setOriginalContent] = useState('')
   const [selectedText, setSelectedText] = useState('')
   const [showSelectionButton, setShowSelectionButton] = useState(false)
+  const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
 
   useEffect(() => {
     setTranslationText(translationLines.join('\n'))
@@ -116,6 +119,7 @@ function NotebookContainer() {
     clearTranslationLines()
     setCurrentEditingId(null)
     setOriginalContent('')
+    setHighlightedLineIndex(null)
     markAsSaved()
   }
 
@@ -142,8 +146,8 @@ function NotebookContainer() {
     }, 100)
   }
 
-  const handleKeyDown = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    await handleKeyboardEvent(event, handleAutoTranslation)
+  const handleKeyDown = async (event: React.KeyboardEvent) => {
+    // CodeMirrorでは独自のキーマップで処理するため、ここでは何もしない
   }
 
   const handleTextSelection = () => {
@@ -153,9 +157,16 @@ function NotebookContainer() {
     if (selectedText && translationText.includes(selectedText)) {
       setSelectedText(selectedText)
       setShowSelectionButton(true)
+      
+      // 日本語選択部分の行数を取得
+      const lineNumber = getSelectedLineNumber('translation-text')
+      
+      // 対応する英語行をハイライト
+      setHighlightedLineIndex(lineNumber)
     } else {
       setSelectedText('')
       setShowSelectionButton(false)
+      setHighlightedLineIndex(null)
     }
   }
 
@@ -172,15 +183,15 @@ function NotebookContainer() {
       <div id="english-side" className="notebook-side">
         <h2>English {hasUnsavedChanges && <span className="unsaved-indicator">●</span>}</h2>
         <div id="input-area">
-          <textarea
-            id="english-input"
+          <CodeMirrorEditor
             value={englishText}
-            onChange={(e) => setEnglishText(e.target.value)}
+            onChange={setEnglishText}
             onKeyDown={handleKeyDown}
+            onAutoTranslation={handleAutoTranslation}
+            highlightedLineIndex={highlightedLineIndex}
             placeholder="Type English here (Enter for translation)"
-            autoFocus
-            rows={8}
             disabled={disabled}
+            className="english-input-editor"
           />
           <div className="button-group">
             <button

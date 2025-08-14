@@ -1,5 +1,82 @@
 /* SpeakNote - 基本的なスタイリング */
 
+/* CodeMirrorエディターのスタイル */
+.codemirror-wrapper {
+  width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: transparent;
+}
+
+.codemirror-wrapper .cm-editor {
+  flex: 1;
+  height: 100%;
+  background: transparent !important;
+  border: none !important;
+}
+
+.codemirror-wrapper .cm-scroller {
+  overflow-y: auto !important;
+  height: 100% !important;
+  min-height: calc(100vh - 254px) !important;
+  max-height: calc(100vh - 254px) !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.codemirror-wrapper .cm-content {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* すべてのCodeMirror関連要素からボーダーを除去（カーソルは除く） */
+.codemirror-wrapper *:not(.cm-cursor) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* カーソルのスタイルを明示的に設定 */
+.codemirror-wrapper .cm-cursor {
+  border-left: 1px solid #2c3e50 !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.codemirror-wrapper .cm-line {
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.codemirror-wrapper .cm-activeLine {
+  border: none !important;
+}
+
+.codemirror-wrapper .cm-focused {
+  border: none !important;
+  outline: none !important;
+}
+
+/* ハイライト行のアニメーション */
+@keyframes highlight-pulse {
+  0% { 
+    background-color: #ffeaa7; 
+    transform: scale(1.02);
+  }
+  100% { 
+    background-color: #fff3cd; 
+    transform: scale(1);
+  }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -250,6 +327,7 @@ h1 {
   flex: 1;
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 180px);
 }
 
 #translation-area {
