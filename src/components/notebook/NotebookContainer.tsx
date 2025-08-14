@@ -112,11 +112,25 @@ function NotebookContainer() {
 
   const handleTranslateClick = async () => {
     await handleTranslate(englishText)
+    // 手動翻訳後も日本語訳エリアを一番下にスクロール
+    setTimeout(() => {
+      const translationTextarea = document.getElementById('translation-text') as HTMLTextAreaElement
+      if (translationTextarea) {
+        translationTextarea.scrollTop = translationTextarea.scrollHeight
+      }
+    }, 100)
   }
 
   const handleAutoTranslation = async () => {
     const { performAutoTranslation } = translation
     await performAutoTranslation(englishText)
+    // 自動翻訳後、日本語訳エリアを一番下にスクロール
+    setTimeout(() => {
+      const translationTextarea = document.getElementById('translation-text') as HTMLTextAreaElement
+      if (translationTextarea) {
+        translationTextarea.scrollTop = translationTextarea.scrollHeight
+      }
+    }, 100)
   }
 
   const handleKeyDown = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
