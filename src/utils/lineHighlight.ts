@@ -5,15 +5,15 @@ export function getSelectedLineNumber(textareaId: string): number | null {
 
   const selectionStart = textarea.selectionStart
   const selectionEnd = textarea.selectionEnd
-  
+
   // 選択範囲がない場合
   if (selectionStart === selectionEnd) return null
 
   const text = textarea.value
   const beforeSelection = text.substring(0, selectionStart)
-  
+
   // 選択開始位置までの行数を計算（0ベース）
   const lineNumber = beforeSelection.split('\n').length - 1
-  
+
   return lineNumber
 }

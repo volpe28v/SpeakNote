@@ -9,7 +9,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
-    'plugin:react/jsx-runtime'
+    'plugin:react/jsx-runtime',
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs'],
   parser: '@typescript-eslint/parser',
@@ -24,16 +24,16 @@ module.exports = {
       'error',
       {
         ignoreRestArgs: true,
-      }
+      },
     ],
   },
   overrides: [
     {
       files: ['src/lib/firebase-config.ts'],
       rules: {
-        '@typescript-eslint/no-explicit-any': 'off'
-      }
-    }
+        '@typescript-eslint/no-explicit-any': 'off',
+      },
+    },
   ],
   settings: {
     react: {

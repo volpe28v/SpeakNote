@@ -1,7 +1,5 @@
 function Toast() {
-  return (
-    <div id="toast-container"></div>
-  )
+  return <div id="toast-container"></div>
 }
 
 export default Toast

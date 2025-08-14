@@ -17,15 +17,15 @@ class ToastManager {
     const toast = document.createElement('div')
     toast.className = `toast ${type}`
     toast.textContent = message
-    
+
     // コンテナに追加
     container.appendChild(toast)
-    
+
     // アニメーション開始
     setTimeout(() => {
       toast.classList.add('show')
     }, 10)
-    
+
     // 自動削除
     setTimeout(() => {
       toast.classList.remove('show')
@@ -37,19 +37,19 @@ class ToastManager {
       }, 300)
     }, duration)
   }
-  
+
   success(message: string, duration = 3000): void {
     this.show(message, 'success', duration)
   }
-  
+
   error(message: string, duration = 4000): void {
     this.show(message, 'error', duration)
   }
-  
+
   info(message: string, duration = 3000): void {
     this.show(message, 'info', duration)
   }
-  
+
   warning(message: string, duration = 3500): void {
     this.show(message, 'warning', duration)
   }

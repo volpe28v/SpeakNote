@@ -27,7 +27,7 @@ export function useTranslation(): UseTranslationReturn {
         `${GAS_TRANSLATE_URL}?text=${encodeURIComponent(text)}&source=en&target=ja`
       )
       const data = await response.json()
-      
+
       if (data.success) {
         return data.text
       } else {
@@ -40,79 +40,88 @@ export function useTranslation(): UseTranslationReturn {
     }
   }, [])
 
-  const translate = useCallback(async (text: string): Promise<string | null> => {
-    if (!text.trim()) {
-      setTimeout(() => toast.info('Please enter English text'), 100)
-      return null
-    }
+  const translate = useCallback(
+    async (text: string): Promise<string | null> => {
+      if (!text.trim()) {
+        setTimeout(() => toast.info('Please enter English text'), 100)
+        return null
+      }
 
-    if (isTranslating) {
-      return null
-    }
+      if (isTranslating) {
+        return null
+      }
 
-    if (!GAS_TRANSLATE_URL) {
-      setTimeout(() => toast.warning(UI_STRINGS.API_NOT_SET), 100)
-      return null
-    }
+      if (!GAS_TRANSLATE_URL) {
+        setTimeout(() => toast.warning(UI_STRINGS.API_NOT_SET), 100)
+        return null
+      }
 
-    try {
-      return await translateWithGoogleAPI(text)
-    } catch (error) {
-      console.error('Translation error:', error)
-      setTimeout(() => toast.error(UI_STRINGS.TRANSLATION_ERROR), 100)
-      return null
-    }
-  }, [isTranslating, translateWithGoogleAPI])
+      try {
+        return await translateWithGoogleAPI(text)
+      } catch (error) {
+        console.error('Translation error:', error)
+        setTimeout(() => toast.error(UI_STRINGS.TRANSLATION_ERROR), 100)
+        return null
+      }
+    },
+    [isTranslating, translateWithGoogleAPI]
+  )
 
-  const handleTranslate = useCallback(async (englishText: string): Promise<void> => {
-    if (!englishText.trim()) {
-      setTimeout(() => toast.info('Please enter English text'), 100)
-      return
-    }
+  const handleTranslate = useCallback(
+    async (englishText: string): Promise<void> => {
+      if (!englishText.trim()) {
+        setTimeout(() => toast.info('Please enter English text'), 100)
+        return
+      }
 
-    if (isTranslating) {
-      return
-    }
+      if (isTranslating) {
+        return
+      }
 
-    if (!GAS_TRANSLATE_URL) {
-      setTimeout(() => toast.warning(UI_STRINGS.API_NOT_SET), 100)
-      return
-    }
+      if (!GAS_TRANSLATE_URL) {
+        setTimeout(() => toast.warning(UI_STRINGS.API_NOT_SET), 100)
+        return
+      }
 
-    setIsTranslating(true)
+      setIsTranslating(true)
 
-    try {
-      const translatedText = await translateWithGoogleAPI(englishText)
-      const lines = translatedText.split('\n')
-      setTranslationLinesState(lines)
-      setTimeout(() => toast.success('Translation completed'), 100)
-    } catch (error) {
-      console.error('Translation error:', error)
-      setTimeout(() => toast.error(UI_STRINGS.TRANSLATION_ERROR), 100)
-    } finally {
-      setIsTranslating(false)
-    }
-  }, [isTranslating, translateWithGoogleAPI])
-
-  const performAutoTranslation = useCallback(async (englishText: string): Promise<void> => {
-    if (!GAS_TRANSLATE_URL || isTranslating) {
-      return
-    }
-
-    setIsTranslating(true)
-
-    try {
-      if (englishText.trim()) {
+      try {
         const translatedText = await translateWithGoogleAPI(englishText)
         const lines = translatedText.split('\n')
         setTranslationLinesState(lines)
+        setTimeout(() => toast.success('Translation completed'), 100)
+      } catch (error) {
+        console.error('Translation error:', error)
+        setTimeout(() => toast.error(UI_STRINGS.TRANSLATION_ERROR), 100)
+      } finally {
+        setIsTranslating(false)
       }
-    } catch (error) {
-      console.error('Auto translation error:', error)
-    } finally {
-      setIsTranslating(false)
-    }
-  }, [isTranslating, translateWithGoogleAPI])
+    },
+    [isTranslating, translateWithGoogleAPI]
+  )
+
+  const performAutoTranslation = useCallback(
+    async (englishText: string): Promise<void> => {
+      if (!GAS_TRANSLATE_URL || isTranslating) {
+        return
+      }
+
+      setIsTranslating(true)
+
+      try {
+        if (englishText.trim()) {
+          const translatedText = await translateWithGoogleAPI(englishText)
+          const lines = translatedText.split('\n')
+          setTranslationLinesState(lines)
+        }
+      } catch (error) {
+        console.error('Auto translation error:', error)
+      } finally {
+        setIsTranslating(false)
+      }
+    },
+    [isTranslating, translateWithGoogleAPI]
+  )
 
   const setTranslationLines = useCallback((lines: string[]) => {
     setTranslationLinesState(lines)
@@ -129,6 +138,6 @@ export function useTranslation(): UseTranslationReturn {
     handleTranslate,
     performAutoTranslation,
     setTranslationLines,
-    clearTranslationLines
+    clearTranslationLines,
   }
 }

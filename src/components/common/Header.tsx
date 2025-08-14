@@ -13,7 +13,9 @@ function Header() {
           {user ? (
             <div id="user-info" className="user-info">
               <img id="user-avatar" className="user-avatar" src={user.photoURL || ''} alt="" />
-              <span id="user-name" className="user-name">{user.displayName || 'User'}</span>
+              <span id="user-name" className="user-name">
+                {user.displayName || 'User'}
+              </span>
               <button id="logout-button" className="auth-button logout" onClick={logout}>
                 Sign Out
               </button>

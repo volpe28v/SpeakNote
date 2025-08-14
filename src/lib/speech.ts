@@ -7,26 +7,26 @@ export const SPEECH_CONFIG: Record<string, SpeechConfig> = {
     lang: 'en-GB',
     rate: 0.7,
     pitch: 1.0,
-    volume: 1.0
+    volume: 1.0,
   },
   ENGLISH_QUESTION: {
     lang: 'en-GB',
     rate: 0.7,
     pitch: 1.2,
-    volume: 1.0
+    volume: 1.0,
   },
   JAPANESE: {
     lang: 'ja-JP',
     rate: 1.0,
     pitch: 1.0,
-    volume: 1.0
+    volume: 1.0,
   },
   PAUSE: {
     lang: 'en-GB',
     rate: 0.5,
     pitch: 1.0,
-    volume: 1.0
-  }
+    volume: 1.0,
+  },
 }
 
 // Web Speech APIの確認
@@ -46,17 +46,17 @@ export function createUtterance(text: string, config: SpeechConfig): SpeechSynth
 
 // 複数行のテキストを順番に発音する関数
 export function speakMultipleLines(text: string): void {
-  const lines = text.split('\n').filter(line => line.trim())
-  
+  const lines = text.split('\n').filter((line) => line.trim())
+
   // 既存の発音をキャンセル
   window.speechSynthesis.cancel()
-  
+
   // 各行を順番に発音（間に一拍置く）
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     const utterance = createUtterance(line, SPEECH_CONFIG.ENGLISH)
     window.speechSynthesis.speak(utterance)
-    
+
     // 最後の行でなければ一拍置く
     if (i < lines.length - 1) {
       const pause = createUtterance(' ', SPEECH_CONFIG.PAUSE)

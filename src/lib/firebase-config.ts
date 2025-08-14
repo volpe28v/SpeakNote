@@ -8,7 +8,7 @@ const devConfig: FirebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ''
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
 }
 
 // 本番環境用設定（windowオブジェクトから読み込み）
@@ -18,21 +18,21 @@ const prodConfig: FirebaseConfig = {
   projectId: (window as any).FIREBASE_PROJECT_ID || devConfig.projectId,
   storageBucket: (window as any).FIREBASE_STORAGE_BUCKET || devConfig.storageBucket,
   messagingSenderId: (window as any).FIREBASE_MESSAGING_SENDER_ID || devConfig.messagingSenderId,
-  appId: (window as any).FIREBASE_APP_ID || devConfig.appId
+  appId: (window as any).FIREBASE_APP_ID || devConfig.appId,
 }
 
 // 環境判定（localhost以外は本番とみなす）
-const isProduction = !window.location.hostname.includes('localhost') && 
-                    !window.location.hostname.includes('127.0.0.1')
+const isProduction =
+  !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')
 
 // 使用する設定を決定
 export const firebaseConfig: FirebaseConfig = isProduction ? prodConfig : devConfig
 
 // デバッグ情報
 console.log(`Firebase Config: ${isProduction ? 'Production' : 'Development'} mode`)
-console.log('Current config:', { 
-  ...firebaseConfig, 
-  apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 10)}...` : 'NOT_SET' 
+console.log('Current config:', {
+  ...firebaseConfig,
+  apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 10)}...` : 'NOT_SET',
 })
 
 // Vite環境変数の型定義

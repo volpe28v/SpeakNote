@@ -26,13 +26,13 @@ export function useAuth(): UseAuthReturn {
     try {
       const auth = new AuthManager()
       const firestore = new FirestoreManager(auth)
-      
+
       await auth.init()
-      
+
       auth.onAuthStateChanged((authUser) => {
         setUser(authUser)
       })
-      
+
       setAuthManager(auth)
       setFirestoreManager(firestore)
       setIsReady(true)
@@ -46,12 +46,14 @@ export function useAuth(): UseAuthReturn {
 
   const login = useCallback(async () => {
     if (!authManager || !firestoreManager) return
-    
+
     try {
       await authManager.signIn()
       const localNotes = getLocalNotes()
       if (localNotes.length > 0) {
-        if (confirm(`Would you like to migrate ${localNotes.length} locally saved notes to cloud?`)) {
+        if (
+          confirm(`Would you like to migrate ${localNotes.length} locally saved notes to cloud?`)
+        ) {
           await firestoreManager.migrateFromLocalStorage()
         }
       }
@@ -75,7 +77,7 @@ export function useAuth(): UseAuthReturn {
     firestoreManager,
     isReady,
     login,
-    logout
+    logout,
   }
 }
 

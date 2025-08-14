@@ -3,16 +3,19 @@
 ## 1. 事前準備
 
 ### Firebase CLIのインストール
+
 ```bash
 npm install -g firebase-tools
 ```
 
 ### Firebaseへのログイン
+
 ```bash
 firebase login
 ```
 
 ### 環境変数の設定
+
 ```bash
 # .env.local.example を .env.local にコピー
 cp .env.local.example .env.local
@@ -24,6 +27,7 @@ cp .env.local.example .env.local
 ## 2. 初回セットアップ（済み）
 
 以下のファイルは既に設定済みです：
+
 - `firebase.json` - Hosting設定
 - `.firebaserc` - プロジェクト設定
 - `firestore.rules` - セキュリティルール
@@ -32,6 +36,7 @@ cp .env.local.example .env.local
 ## 3. 安全なデプロイ実行
 
 ### 自動デプロイスクリプトの使用（推奨）
+
 ```bash
 # 環境変数を読み込んでデプロイ
 source .env.local && ./deploy.sh
@@ -47,6 +52,7 @@ source .env.local && ./deploy.sh all
 ```
 
 ### 手動デプロイ（非推奨）
+
 **⚠️ 注意: 手動デプロイする前に必ず `firebase-config.js` を作成してください**
 
 ```bash
@@ -64,10 +70,12 @@ rm firebase-config.js
 ## 6. デプロイ後の確認
 
 ### ホスティングURL
+
 - 本番URL: https://speaknote-60c4f.web.app
 - または: https://speaknote-60c4f.firebaseapp.com
 
 ### 確認項目
+
 1. ✅ Googleログインが動作する
 2. ✅ ノートの作成・編集・削除がFirestoreと同期
 3. ✅ レスポンシブデザインが正常に表示
@@ -76,6 +84,7 @@ rm firebase-config.js
 ## 7. 秘匿情報管理
 
 ### ファイル構成
+
 ```
 ├── firebase-config.template.js  # テンプレート（Git管理対象）
 ├── firebase-config.js          # 実際の設定（.gitignoreで除外）
@@ -85,6 +94,7 @@ rm firebase-config.js
 ```
 
 ### セキュリティ原則
+
 - `firebase-config.js` は **絶対にGitにコミットしない**
 - `.env.local` も **絶対にGitにコミットしない**
 - デプロイ後は一時ファイルを自動削除
@@ -95,22 +105,27 @@ rm firebase-config.js
 ### よくある問題
 
 **1. 環境変数が設定されていない**
+
 - `.env.local` ファイルが存在するか確認
 - `source .env.local` で環境変数を読み込んでいるか確認
 
 **2. Firebase設定エラー**
+
 - `.env.local` の設定値を確認
 - Firebase Console で正しいプロジェクト設定を取得
 
 **2. Firestoreアクセスエラー**
+
 - セキュリティルールが正しく設定されているか確認
 - ユーザー認証後にアクセスしているか確認
 
 **3. 静的ファイル404エラー**
+
 - `firebase.json`の`public`設定を確認
 - デプロイ対象ファイルが正しく含まれているか確認
 
 ### ログの確認
+
 ```bash
 # Firebase関数のログ確認
 firebase functions:log
@@ -122,15 +137,18 @@ firebase hosting:channel:open
 ## 8. 環境管理
 
 ### 開発環境
+
 - `localhost`でアクセス時は`firebase-config.js`の開発用設定を使用
 
 ### 本番環境
+
 - デプロイされたURLでアクセス時は本番用設定を使用
 - 環境変数が必要な場合はFirebase Hostingの環境変数機能を使用
 
 ## 9. 継続的デプロイ
 
 GitHub Actionsを使用した自動デプロイも設定可能です：
+
 ```yaml
 name: Deploy to Firebase Hosting
 on:

@@ -1,26 +1,26 @@
 // Firebase設定とSDKの初期化
 import { initializeApp } from 'firebase/app'
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signOut, 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
   onAuthStateChanged,
   type Auth,
-  type User
+  type User,
 } from 'firebase/auth'
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  orderBy, 
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
   getDocs,
   serverTimestamp,
-  type Firestore
+  type Firestore,
 } from 'firebase/firestore'
 import { firebaseConfig } from './firebase-config'
 import type { Note } from '@/types'
@@ -34,7 +34,7 @@ export const db: Firestore = getFirestore(app)
 // Google認証プロバイダー
 const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: 'select_account',
 })
 
 // 認証機能
@@ -51,7 +51,7 @@ export class AuthManager {
     return new Promise((resolve) => {
       onAuthStateChanged(auth, (user) => {
         this.user = user
-        this.callbacks.forEach(callback => callback(user))
+        this.callbacks.forEach((callback) => callback(user))
         resolve(user)
       })
     })
@@ -120,7 +120,7 @@ export class FirestoreManager {
         english: note.text,
         translations: note.translations,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       })
     } catch (error) {
       console.error('Firestore保存エラー:', error)
@@ -140,7 +140,7 @@ export class FirestoreManager {
       await updateDoc(noteRef, {
         english: note.text,
         translations: note.translations,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       })
     } catch (error) {
       console.error('Firestore更新エラー:', error)
@@ -172,12 +172,9 @@ export class FirestoreManager {
     }
 
     try {
-      const q = query(
-        this.getUserNotesCollection(user.uid),
-        orderBy('updatedAt', 'desc')
-      )
+      const q = query(this.getUserNotesCollection(user.uid), orderBy('updatedAt', 'desc'))
       const querySnapshot = await getDocs(q)
-      
+
       const notes: Note[] = []
       querySnapshot.forEach((doc) => {
         const data = doc.data()
@@ -185,10 +182,10 @@ export class FirestoreManager {
           id: parseInt(doc.id),
           text: data.english,
           translations: data.translations || [],
-          timestamp: data.updatedAt?.toDate()?.toISOString() || new Date().toISOString()
+          timestamp: data.updatedAt?.toDate()?.toISOString() || new Date().toISOString(),
         })
       })
-      
+
       return notes
     } catch (error) {
       console.error('Firestore取得エラー:', error)

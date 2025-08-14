@@ -26,26 +26,30 @@ SpeakNoteで本格的な翻訳機能を使用するには、Google Apps Script�
    ```javascript
    function doGet(e) {
      // CORSヘッダーを設定
-     const output = ContentService.createTextOutput();
-     output.setMimeType(ContentService.MimeType.JSON);
-     
-     const text = e.parameter.text || "";
-     const source = e.parameter.source || "en";
-     const target = e.parameter.target || "ja";
-     
+     const output = ContentService.createTextOutput()
+     output.setMimeType(ContentService.MimeType.JSON)
+
+     const text = e.parameter.text || ''
+     const source = e.parameter.source || 'en'
+     const target = e.parameter.target || 'ja'
+
      try {
-       const translated = LanguageApp.translate(text, source, target);
-       return output.setContent(JSON.stringify({
-         success: true,
-         text: translated,
-         source: source,
-         target: target
-       }));
-     } catch(error) {
-       return output.setContent(JSON.stringify({
-         success: false,
-         error: error.toString()
-       }));
+       const translated = LanguageApp.translate(text, source, target)
+       return output.setContent(
+         JSON.stringify({
+           success: true,
+           text: translated,
+           source: source,
+           target: target,
+         })
+       )
+     } catch (error) {
+       return output.setContent(
+         JSON.stringify({
+           success: false,
+           error: error.toString(),
+         })
+       )
      }
    }
    ```
@@ -67,7 +71,7 @@ SpeakNoteで本格的な翻訳機能を使用するには、Google Apps Script�
    - デプロイ完了後、表示されるURLをコピー
    - `script.js`ファイルの2行目にある `GAS_TRANSLATE_URL` にURLを設定：
    ```javascript
-   const GAS_TRANSLATE_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+   const GAS_TRANSLATE_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'
    ```
 
 ## 使い方

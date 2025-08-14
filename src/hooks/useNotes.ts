@@ -8,13 +8,26 @@ interface UseNotesReturn {
   currentEditingId: number | null
   hasAutoLoadedLatestNote: boolean
   isSaving: boolean
-  saveNote: (text: string, translations: string[], authManager: AuthManager, firestoreManager: FirestoreManager) => Promise<SaveResult | false>
-  deleteNote: (id: number, authManager: AuthManager, firestoreManager: FirestoreManager) => Promise<void>
+  saveNote: (
+    text: string,
+    translations: string[],
+    authManager: AuthManager,
+    firestoreManager: FirestoreManager
+  ) => Promise<SaveResult | false>
+  deleteNote: (
+    id: number,
+    authManager: AuthManager,
+    firestoreManager: FirestoreManager
+  ) => Promise<void>
   loadNote: (note: Note, onEditingStart: (id: number) => void) => Note
   setCurrentEditingId: (id: number | null) => void
   setNotes: (notes: Note[]) => void
   resetFlags: () => void
-  syncFromFirestore: (authManager: AuthManager, firestoreManager: FirestoreManager, onLatestNoteAutoLoad?: (note: Note) => void) => Promise<void>
+  syncFromFirestore: (
+    authManager: AuthManager,
+    firestoreManager: FirestoreManager,
+    onLatestNoteAutoLoad?: (note: Note) => void
+  ) => Promise<void>
 }
 
 export function useNotes(): UseNotesReturn {
@@ -23,75 +36,78 @@ export function useNotes(): UseNotesReturn {
   const [hasAutoLoadedLatestNote, setHasAutoLoadedLatestNote] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  const saveNote = useCallback(async (
-    text: string, 
-    translations: string[],
-    authManager: AuthManager,
-    firestoreManager: FirestoreManager
-  ): Promise<SaveResult | false> => {
-    if (!text.trim()) return false
-    
-    const trimmedText = text.trim()
-    const cleanTranslations = translations || []
-    
-    if (!firestoreManager || !authManager.getCurrentUser()) {
-      setTimeout(() => toast.error('Please login to save notes'), 100)
-      return false
-    }
+  const saveNote = useCallback(
+    async (
+      text: string,
+      translations: string[],
+      authManager: AuthManager,
+      firestoreManager: FirestoreManager
+    ): Promise<SaveResult | false> => {
+      if (!text.trim()) return false
 
-    if (isSaving) {
-      return false
-    }
-    
-    setIsSaving(true)
-    
-    try {
-      const noteData: Note = {
-        id: currentEditingId || Date.now(),
-        text: trimmedText,
-        translations: cleanTranslations,
-        timestamp: new Date().toISOString()
+      const trimmedText = text.trim()
+      const cleanTranslations = translations || []
+
+      if (!firestoreManager || !authManager.getCurrentUser()) {
+        setTimeout(() => toast.error('Please login to save notes'), 100)
+        return false
       }
-      
-      if (currentEditingId) {
-        await firestoreManager.updateNote(noteData)
-        return { type: 'updated', id: currentEditingId }
-      } else {
-        await firestoreManager.saveNote(noteData)
-        return { type: 'saved', id: noteData.id }
+
+      if (isSaving) {
+        return false
       }
-    } catch (error) {
-      console.error('Firestore save error:', error)
-      setTimeout(() => toast.error('Save failed. Please try again.'), 100)
-      return false
-    } finally {
-      setIsSaving(false)
-    }
-  }, [currentEditingId, isSaving])
 
-  const deleteNote = useCallback(async (
-    id: number,
-    authManager: AuthManager,
-    firestoreManager: FirestoreManager
-  ): Promise<void> => {
-    if (!firestoreManager || !authManager.getCurrentUser()) {
-      setTimeout(() => toast.error('Please login to delete notes'), 100)
-      return
-    }
-    
-    try {
-      await firestoreManager.deleteNote(id)
-      setNotes(prevNotes => prevNotes.filter(note => note.id !== id))
-    } catch (error) {
-      console.error('Firestore delete error:', error)
-      setTimeout(() => toast.error('Delete failed. Please try again.'), 100)
-    }
-  }, [])
+      setIsSaving(true)
 
-  const loadNote = useCallback((
-    note: Note,
-    onEditingStart: (id: number) => void
-  ): Note => {
+      try {
+        const noteData: Note = {
+          id: currentEditingId || Date.now(),
+          text: trimmedText,
+          translations: cleanTranslations,
+          timestamp: new Date().toISOString(),
+        }
+
+        if (currentEditingId) {
+          await firestoreManager.updateNote(noteData)
+          return { type: 'updated', id: currentEditingId }
+        } else {
+          await firestoreManager.saveNote(noteData)
+          return { type: 'saved', id: noteData.id }
+        }
+      } catch (error) {
+        console.error('Firestore save error:', error)
+        setTimeout(() => toast.error('Save failed. Please try again.'), 100)
+        return false
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [currentEditingId, isSaving]
+  )
+
+  const deleteNote = useCallback(
+    async (
+      id: number,
+      authManager: AuthManager,
+      firestoreManager: FirestoreManager
+    ): Promise<void> => {
+      if (!firestoreManager || !authManager.getCurrentUser()) {
+        setTimeout(() => toast.error('Please login to delete notes'), 100)
+        return
+      }
+
+      try {
+        await firestoreManager.deleteNote(id)
+        setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id))
+      } catch (error) {
+        console.error('Firestore delete error:', error)
+        setTimeout(() => toast.error('Delete failed. Please try again.'), 100)
+      }
+    },
+    []
+  )
+
+  const loadNote = useCallback((note: Note, onEditingStart: (id: number) => void): Note => {
     onEditingStart(note.id)
     setCurrentEditingId(note.id)
     return note
@@ -102,36 +118,39 @@ export function useNotes(): UseNotesReturn {
     setHasAutoLoadedLatestNote(false)
   }, [])
 
-  const syncFromFirestore = useCallback(async (
-    authManager: AuthManager,
-    firestoreManager: FirestoreManager,
-    onLatestNoteAutoLoad?: (note: Note) => void
-  ): Promise<void> => {
-    if (!firestoreManager || !authManager.getCurrentUser()) {
-      return
-    }
-    
-    try {
-      const cloudNotes = await firestoreManager.getUserNotes()
-      setNotes(cloudNotes)
-      
-      if (cloudNotes.length > 0 && !currentEditingId && !hasAutoLoadedLatestNote) {
-        const latestNote = cloudNotes[0]
-        if (onLatestNoteAutoLoad) {
-          onLatestNoteAutoLoad(latestNote)
+  const syncFromFirestore = useCallback(
+    async (
+      authManager: AuthManager,
+      firestoreManager: FirestoreManager,
+      onLatestNoteAutoLoad?: (note: Note) => void
+    ): Promise<void> => {
+      if (!firestoreManager || !authManager.getCurrentUser()) {
+        return
+      }
+
+      try {
+        const cloudNotes = await firestoreManager.getUserNotes()
+        setNotes(cloudNotes)
+
+        if (cloudNotes.length > 0 && !currentEditingId && !hasAutoLoadedLatestNote) {
+          const latestNote = cloudNotes[0]
+          if (onLatestNoteAutoLoad) {
+            onLatestNoteAutoLoad(latestNote)
+          }
+          setHasAutoLoadedLatestNote(true)
+          setTimeout(() => {
+            toast.info('Latest note loaded automatically')
+          }, 100)
         }
-        setHasAutoLoadedLatestNote(true)
+      } catch (error) {
+        console.error('Firestore sync error:', error)
         setTimeout(() => {
-          toast.info('Latest note loaded automatically')
+          toast.error('Failed to sync from cloud')
         }, 100)
       }
-    } catch (error) {
-      console.error('Firestore sync error:', error)
-      setTimeout(() => {
-        toast.error('Failed to sync from cloud')
-      }, 100)
-    }
-  }, [currentEditingId, hasAutoLoadedLatestNote])
+    },
+    [currentEditingId, hasAutoLoadedLatestNote]
+  )
 
   return {
     notes,
@@ -144,6 +163,6 @@ export function useNotes(): UseNotesReturn {
     setCurrentEditingId,
     setNotes,
     resetFlags,
-    syncFromFirestore
+    syncFromFirestore,
   }
 }

@@ -13,25 +13,25 @@ export default defineConfig({
     minify: 'terser',
     rollupOptions: {
       input: {
-        main: './index.html'
+        main: './index.html',
       },
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          firebase: ['firebase/auth', 'firebase/firestore', 'firebase/app']
-        }
-      }
+          firebase: ['firebase/auth', 'firebase/firestore', 'firebase/app'],
+        },
+      },
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     port: 3000,
     open: true,
-    host: true
+    host: true,
   },
   resolve: {
     alias: {
-      '@': '/src'
-    }
-  }
+      '@': '/src',
+    },
+  },
 })
