@@ -68,12 +68,19 @@
 /* ハイライト行のアニメーション */
 @keyframes highlight-pulse {
   0% {
+    background-color: #fff3cd;
+    opacity: 0.3;
+    box-shadow: 0 0 4px rgba(255, 193, 7, 0.2);
+  }
+  50% {
     background-color: #ffeaa7;
-    transform: scale(1.02);
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(255, 193, 7, 0.6);
   }
   100% {
     background-color: #fff3cd;
-    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
   }
 }
 

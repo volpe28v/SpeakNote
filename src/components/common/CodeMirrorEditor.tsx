@@ -88,9 +88,9 @@ const noteTheme = EditorView.theme({
   },
   '.cm-highlighted-line': {
     backgroundColor: '#fff3cd !important',
-    border: '1px solid #ffc107',
     borderRadius: '3px',
-    animation: 'highlight-pulse 0.3s ease-in-out',
+    animation: 'highlight-pulse 0.6s ease-in-out',
+    boxShadow: '0 0 8px rgba(255, 193, 7, 0.4)',
   },
   '.cm-cursor': {
     borderColor: '#2c3e50 !important',
