@@ -43,7 +43,8 @@ const createHighlightExtension = (lineIndex: number | null): Extension => {
 const noteTheme = EditorView.theme({
   '&': {
     fontSize: '22px',
-    fontFamily: "'Georgia', 'Times New Roman', serif",
+    fontFamily:
+      "'Roboto Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Source Code Pro', monospace",
     height: '100%',
     background: 'transparent',
   },
@@ -56,7 +57,8 @@ const noteTheme = EditorView.theme({
     height: '100%',
   },
   '.cm-scroller': {
-    fontFamily: "'Georgia', 'Times New Roman', serif",
+    fontFamily:
+      "'Roboto Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Source Code Pro', monospace",
     overflow: 'auto !important',
     overflowY: 'auto !important',
     height: '100%',
