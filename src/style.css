@@ -41,13 +41,14 @@
 
 /* カーソルのスタイルを明示的に設定 */
 .codemirror-wrapper .cm-cursor {
-  border-left: 1px solid #2c3e50 !important;
+  border-left: 2px solid #e74c3c !important;
   border-right: none !important;
   border-top: none !important;
   border-bottom: none !important;
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  animation: cursor-blink 1.2s infinite;
 }
 
 .codemirror-wrapper .cm-line {
@@ -81,6 +82,18 @@
     background-color: #fff3cd;
     opacity: 1;
     box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
+  }
+}
+
+/* カーソルの点滅アニメーション */
+@keyframes cursor-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0.3;
   }
 }
 

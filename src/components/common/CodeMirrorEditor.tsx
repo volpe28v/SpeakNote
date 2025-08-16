@@ -93,12 +93,14 @@ const noteTheme = EditorView.theme({
     boxShadow: '0 0 8px rgba(255, 193, 7, 0.4)',
   },
   '.cm-cursor': {
-    borderColor: '#2c3e50 !important',
-    borderWidth: '1px !important',
+    borderColor: '#e74c3c !important',
+    borderWidth: '2px !important',
     borderStyle: 'solid !important',
     display: 'block !important',
     visibility: 'visible !important',
     opacity: '1 !important',
+    animation: 'cursor-blink 1.2s infinite',
+    borderRadius: '1px',
   },
   '.cm-selectionBackground': {
     backgroundColor: 'rgba(52, 152, 219, 0.3) !important',
