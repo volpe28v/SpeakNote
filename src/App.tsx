@@ -13,7 +13,6 @@ function App() {
   // ノート選択時にNotebookタブに切り替える
   useEffect(() => {
     const handleNoteSelected = () => {
-      console.log('App: Switching to notebook tab after note selection')
       setActiveTab('notebook')
     }
 

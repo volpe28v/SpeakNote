@@ -3,7 +3,9 @@ import { useApp } from '../../contexts/AppContext'
 import { speakEnglish, speakJapanese } from '../../lib/speech'
 import { toast } from '../../lib/toast'
 import { getSelectedLineNumber } from '../../utils/lineHighlight'
+import { useAutoSave } from '../../hooks/useAutoSave'
 import CodeMirrorEditor from '../common/CodeMirrorEditor'
+import AutoSaveStatus from '../common/AutoSaveStatus'
 
 function NotebookContainer() {
   const { auth, translation, notes, unsavedChanges } = useApp()
@@ -20,16 +22,31 @@ function NotebookContainer() {
   const { hasUnsavedChanges, markAsSaved, markAsModified } = unsavedChanges
 
   const [englishText, setEnglishText] = useState('')
-
-  // englishTextの変化をログ出力
-  useEffect(() => {
-    console.log('NotebookContainer: englishText changed to:', englishText)
-  }, [englishText])
   const [translationText, setTranslationText] = useState('')
   const [originalContent, setOriginalContent] = useState('')
   const [selectedText, setSelectedText] = useState('')
   const [showSelectionButton, setShowSelectionButton] = useState(false)
   const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
+
+  // 自動保存機能
+  const { isAutoSaving, lastAutoSavedAt, autoSaveError } = useAutoSave({
+    text: englishText,
+    translations: translationLines,
+    originalContent,
+    authManager,
+    firestoreManager,
+    saveFunction: async (text, translations, authManager, firestoreManager) => {
+      const result = await saveNote(text, translations, authManager, firestoreManager)
+      if (result) {
+        // 自動保存成功時に元のcontentを更新して未保存状態を解消
+        setOriginalContent(text)
+      }
+      return result
+    },
+    intervalMs: 10000, // 10秒間隔
+    minCharsForSave: 10,
+    enabled: !!user,
+  })
 
   useEffect(() => {
     setTranslationText(translationLines.join('\n'))
@@ -70,8 +87,6 @@ function NotebookContainer() {
   useEffect(() => {
     const handleNoteSelected = (event: CustomEvent) => {
       const note = event.detail
-      console.log('NotebookContainer: Received noteSelected event with note:', note)
-      console.log('NotebookContainer: Setting englishText to:', note.text)
 
       setEnglishText(note.text)
       setOriginalContent(note.text)
@@ -83,7 +98,6 @@ function NotebookContainer() {
       setCurrentEditingId(note.id)
       markAsSaved()
 
-      console.log('NotebookContainer: Note data updated successfully')
     }
 
     window.addEventListener('noteSelected', handleNoteSelected as EventListener)
@@ -191,7 +205,20 @@ function NotebookContainer() {
   return (
     <div id="notebook-container" className={disabled ? 'disabled-overlay' : ''}>
       <div id="english-side" className="notebook-side">
-        <h2>English {hasUnsavedChanges && <span className="unsaved-indicator">●</span>}</h2>
+        <div className="english-header">
+          <h2>
+            English 
+            {hasUnsavedChanges && !isAutoSaving && <span className="unsaved-indicator">●</span>}
+          </h2>
+          {user && (
+            <AutoSaveStatus
+              isAutoSaving={isAutoSaving}
+              lastAutoSavedAt={lastAutoSavedAt}
+              autoSaveError={autoSaveError}
+              hasUnsavedChanges={hasUnsavedChanges}
+            />
+          )}
+        </div>
         <div id="input-area">
           <CodeMirrorEditor
             value={englishText}

@@ -104,6 +104,50 @@
   text-underline-offset: 2px !important;
 }
 
+/* 自動保存状態表示のスタイル */
+.autosave-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.autosave-status.saving {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.autosave-status.saved {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.autosave-status.unsaved {
+  background-color: #fff3e0;
+  color: #ef6c00;
+  border: 1px solid #ffcc02;
+}
+
+.autosave-status.error {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+.autosave-icon {
+  font-size: 14px;
+}
+
+.autosave-text {
+  white-space: nowrap;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -472,6 +516,22 @@ h1 {
   gap: 10px;
   margin-top: 15px;
   justify-content: center;
+}
+
+/* Englishヘッダーと自動保存ステータスのレイアウト */
+.english-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.english-header h2 {
+  margin-bottom: 0;
+}
+
+.english-header .autosave-status {
+  margin-left: 15px;
 }
 
 #speak-button,

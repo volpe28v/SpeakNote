@@ -28,12 +28,6 @@ const isProduction =
 // 使用する設定を決定
 export const firebaseConfig: FirebaseConfig = isProduction ? prodConfig : devConfig
 
-// デバッグ情報
-console.log(`Firebase Config: ${isProduction ? 'Production' : 'Development'} mode`)
-console.log('Current config:', {
-  ...firebaseConfig,
-  apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 10)}...` : 'NOT_SET',
-})
 
 // Vite環境変数の型定義
 declare global {

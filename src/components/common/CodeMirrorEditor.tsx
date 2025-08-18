@@ -130,25 +130,19 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     {
       key: 'Enter',
       run: (view) => {
-        console.log('CodeMirror Enter key pressed!')
-        const currentLine = getCurrentLine(view.state)
-        console.log('Enter pressed, currentLine:', currentLine)
-        console.log('onAutoTranslation exists:', !!onAutoTranslation)
+        // 改行前の状態でカーソル位置の行を取得
+        const { from } = view.state.selection.main
+        const line = view.state.doc.lineAt(from)
+        const currentLine = line.text
 
         // 改行処理の前に音声と翻訳を実行
         if (currentLine.trim()) {
           speakEnglish(currentLine.trim(), false)
           if (onAutoTranslation) {
-            console.log('Calling onAutoTranslation')
-            // 非同期処理を適切に処理
             setTimeout(() => {
-              onAutoTranslation()
-                .then(() => {
-                  console.log('Auto translation completed')
-                })
-                .catch((error) => {
-                  console.error('Auto translation error:', error)
-                })
+              onAutoTranslation().catch((error) => {
+                console.error('Auto translation error:', error)
+              })
             }, 100)
           }
         }
@@ -158,7 +152,7 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
           changes: { from: view.state.selection.main.head, insert: '\n' },
         })
 
-        return true // イベントを処理済みとする
+        return true
       },
     },
     {
@@ -183,45 +177,51 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     {
       key: '.',
       run: (view) => {
-        setTimeout(() => {
-          const currentLine = getCurrentLine(view.state)
-          if (currentLine.trim()) {
-            window.speechSynthesis.cancel()
-            const processedText = currentLine.trim() + '.'
-            const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-            window.speechSynthesis.speak(utterance)
-          }
-        }, 50)
+        // ピリオド入力前の状態でカーソル位置の行を取得
+        const { from } = view.state.selection.main
+        const line = view.state.doc.lineAt(from)
+        const currentLine = line.text
+        
+        if (currentLine.trim()) {
+          window.speechSynthesis.cancel()
+          const processedText = currentLine.trim() + '.'
+          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
+          window.speechSynthesis.speak(utterance)
+        }
         return false
       },
     },
     {
       key: '?',
       run: (view) => {
-        setTimeout(() => {
-          const currentLine = getCurrentLine(view.state)
-          if (currentLine.trim()) {
-            window.speechSynthesis.cancel()
-            const processedText = currentLine.trim() + '?'
-            const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH_QUESTION)
-            window.speechSynthesis.speak(utterance)
-          }
-        }, 50)
+        // 疑問符入力前の状態でカーソル位置の行を取得
+        const { from } = view.state.selection.main
+        const line = view.state.doc.lineAt(from)
+        const currentLine = line.text
+        
+        if (currentLine.trim()) {
+          window.speechSynthesis.cancel()
+          const processedText = currentLine.trim() + '?'
+          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH_QUESTION)
+          window.speechSynthesis.speak(utterance)
+        }
         return false
       },
     },
     {
       key: '!',
       run: (view) => {
-        setTimeout(() => {
-          const currentLine = getCurrentLine(view.state)
-          if (currentLine.trim()) {
-            window.speechSynthesis.cancel()
-            const processedText = currentLine.trim() + '!'
-            const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-            window.speechSynthesis.speak(utterance)
-          }
-        }, 50)
+        // 感嘆符入力前の状態でカーソル位置の行を取得
+        const { from } = view.state.selection.main
+        const line = view.state.doc.lineAt(from)
+        const currentLine = line.text
+        
+        if (currentLine.trim()) {
+          window.speechSynthesis.cancel()
+          const processedText = currentLine.trim() + '!'
+          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
+          window.speechSynthesis.speak(utterance)
+        }
         return false
       },
     },
@@ -311,10 +311,7 @@ function CodeMirrorEditor({
 
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
-      console.log('React keyDown event:', event.key)
-
       if (event.key === 'Enter') {
-        console.log('Enter key detected in React handler')
 
         // ドキュメントのセレクションから現在の行を正確に取得
         const selection = window.getSelection()
@@ -342,18 +339,12 @@ function CodeMirrorEditor({
             (currentElement as Element).classList.contains('cm-line')
           ) {
             const currentLine = currentElement.textContent || ''
-            console.log('Current line from DOM element:', currentLine)
 
             if (currentLine.trim()) {
-              console.log('Speaking and translating DOM line:', currentLine.trim())
               speakEnglish(currentLine.trim(), false)
               if (onAutoTranslation) {
-                console.log('Calling onAutoTranslation from DOM handler')
                 setTimeout(() => {
                   onAutoTranslation()
-                    .then(() => {
-                      console.log('Auto translation completed from DOM handler')
-                    })
                     .catch((error) => {
                       console.error('Auto translation error from DOM handler:', error)
                     })
@@ -368,18 +359,11 @@ function CodeMirrorEditor({
         const lines = value.split('\n')
         const lastNonEmptyLine = lines.filter((line) => line.trim()).pop() || ''
 
-        console.log('Fallback: Last non-empty line:', lastNonEmptyLine)
-
         if (lastNonEmptyLine.trim()) {
-          console.log('Fallback: Speaking and translating:', lastNonEmptyLine.trim())
           speakEnglish(lastNonEmptyLine.trim(), false)
           if (onAutoTranslation) {
-            console.log('Fallback: Calling onAutoTranslation')
             setTimeout(() => {
               onAutoTranslation()
-                .then(() => {
-                  console.log('Fallback: Auto translation completed')
-                })
                 .catch((error) => {
                   console.error('Fallback: Auto translation error:', error)
                 })
