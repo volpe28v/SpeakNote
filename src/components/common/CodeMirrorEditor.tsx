@@ -3,6 +3,7 @@ import CodeMirror from '@uiw/react-codemirror'
 import { EditorView, Decoration, keymap } from '@codemirror/view'
 import { EditorState, Extension } from '@codemirror/state'
 import { speakEnglish, createUtterance, SPEECH_CONFIG } from '../../lib/speech'
+import { spellCheckField, initSpellCheck, setUpdateCallback } from '../../lib/spellcheck'
 
 interface CodeMirrorEditorProps {
   value: string
@@ -241,6 +242,18 @@ function CodeMirrorEditor({
 }: CodeMirrorEditorProps) {
   const editorViewRef = React.useRef<EditorView | null>(null)
 
+  // スペルチェック辞書を初期化
+  React.useEffect(() => {
+    // 辞書が読み込まれたらエディタを更新
+    setUpdateCallback(() => {
+      if (editorViewRef.current) {
+        // エディタの状態を強制的に更新
+        editorViewRef.current.dispatch({})
+      }
+    })
+    initSpellCheck()
+  }, [])
+
   const extensions = React.useMemo(() => {
     const speechKeymap = createSpeechKeymap(onAutoTranslation)
 
@@ -249,6 +262,7 @@ function CodeMirrorEditor({
       noteTheme,
       EditorView.lineWrapping,
       EditorState.readOnly.of(disabled),
+      spellCheckField, // スペルチェック機能を追加
       // EditorViewの参照を保持するためのエクステンション
       EditorView.updateListener.of((update) => {
         if (update.view !== editorViewRef.current) {

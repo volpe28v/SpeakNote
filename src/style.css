@@ -97,6 +97,13 @@
   }
 }
 
+/* スペルチェックエラーのスタイル */
+.cm-spellcheck-error {
+  text-decoration: underline wavy #e74c3c !important;
+  text-decoration-thickness: 1.5px !important;
+  text-underline-offset: 2px !important;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
