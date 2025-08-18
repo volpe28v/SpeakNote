@@ -14,7 +14,6 @@ function NotesList() {
   // NotebookContainerで既に同期されるため、こちらでは個別の同期処理は不要
 
   const handleNoteClick = (note: Note) => {
-
     // 未保存の変更がある場合は確認
     if (hasUnsavedChanges) {
       if (!confirm('There are unsaved changes. Do you want to discard them and load this note?')) {

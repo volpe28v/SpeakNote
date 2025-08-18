@@ -1,4 +1,3 @@
-import React from 'react'
 
 interface AutoSaveStatusProps {
   isAutoSaving: boolean
@@ -48,9 +47,7 @@ function AutoSaveStatus({
     return (
       <div className="autosave-status saved">
         <span className="autosave-icon">✅</span>
-        <span className="autosave-text">
-          Saved {formatTime(lastAutoSavedAt)}
-        </span>
+        <span className="autosave-text">Saved {formatTime(lastAutoSavedAt)}</span>
       </div>
     )
   }

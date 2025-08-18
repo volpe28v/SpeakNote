@@ -12,7 +12,7 @@ interface UseAutoSaveOptions {
     translations: string[],
     authManager: AuthManager,
     firestoreManager: FirestoreManager
-  ) => Promise<any>
+  ) => Promise<unknown>
   intervalMs?: number
   minCharsForSave?: number
   enabled?: boolean
@@ -38,7 +38,7 @@ export function useAutoSave({
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [lastAutoSavedAt, setLastAutoSavedAt] = useState<Date | null>(null)
   const [autoSaveError, setAutoSaveError] = useState<string | null>(null)
-  
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const lastSavedContentRef = useRef<string>('')
   const hasUnsavedChangesRef = useRef(false)
@@ -50,7 +50,7 @@ export function useAutoSave({
     }
 
     const currentText = text.trim()
-    
+
     // 保存条件のチェック
     if (
       currentText.length < minCharsForSave ||
@@ -93,7 +93,7 @@ export function useAutoSave({
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
-    
+
     if (enabled && authManager && firestoreManager) {
       timeoutRef.current = setTimeout(() => {
         performAutoSave()
@@ -104,8 +104,9 @@ export function useAutoSave({
   // テキスト変更の監視
   useEffect(() => {
     const currentText = text.trim()
-    const hasChanges = currentText !== originalContent.trim() && currentText !== lastSavedContentRef.current
-    
+    const hasChanges =
+      currentText !== originalContent.trim() && currentText !== lastSavedContentRef.current
+
     if (hasChanges && currentText.length >= minCharsForSave) {
       hasUnsavedChangesRef.current = true
       resetTimer()

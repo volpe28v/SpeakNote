@@ -181,7 +181,7 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
         const { from } = view.state.selection.main
         const line = view.state.doc.lineAt(from)
         const currentLine = line.text
-        
+
         if (currentLine.trim()) {
           window.speechSynthesis.cancel()
           const processedText = currentLine.trim() + '.'
@@ -198,7 +198,7 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
         const { from } = view.state.selection.main
         const line = view.state.doc.lineAt(from)
         const currentLine = line.text
-        
+
         if (currentLine.trim()) {
           window.speechSynthesis.cancel()
           const processedText = currentLine.trim() + '?'
@@ -215,7 +215,7 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
         const { from } = view.state.selection.main
         const line = view.state.doc.lineAt(from)
         const currentLine = line.text
-        
+
         if (currentLine.trim()) {
           window.speechSynthesis.cancel()
           const processedText = currentLine.trim() + '!'
@@ -312,7 +312,6 @@ function CodeMirrorEditor({
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (event.key === 'Enter') {
-
         // ドキュメントのセレクションから現在の行を正確に取得
         const selection = window.getSelection()
         if (selection && selection.rangeCount > 0) {
@@ -344,10 +343,9 @@ function CodeMirrorEditor({
               speakEnglish(currentLine.trim(), false)
               if (onAutoTranslation) {
                 setTimeout(() => {
-                  onAutoTranslation()
-                    .catch((error) => {
-                      console.error('Auto translation error from DOM handler:', error)
-                    })
+                  onAutoTranslation().catch((error) => {
+                    console.error('Auto translation error from DOM handler:', error)
+                  })
                 }, 100)
               }
               return
@@ -363,10 +361,9 @@ function CodeMirrorEditor({
           speakEnglish(lastNonEmptyLine.trim(), false)
           if (onAutoTranslation) {
             setTimeout(() => {
-              onAutoTranslation()
-                .catch((error) => {
-                  console.error('Fallback: Auto translation error:', error)
-                })
+              onAutoTranslation().catch((error) => {
+                console.error('Fallback: Auto translation error:', error)
+              })
             }, 100)
           }
         }

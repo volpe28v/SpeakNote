@@ -97,7 +97,6 @@ function NotebookContainer() {
       }
       setCurrentEditingId(note.id)
       markAsSaved()
-
     }
 
     window.addEventListener('noteSelected', handleNoteSelected as EventListener)
@@ -207,7 +206,7 @@ function NotebookContainer() {
       <div id="english-side" className="notebook-side">
         <div className="english-header">
           <h2>
-            English 
+            English
             {hasUnsavedChanges && !isAutoSaving && <span className="unsaved-indicator">●</span>}
           </h2>
           {user && (

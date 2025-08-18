@@ -28,7 +28,6 @@ const isProduction =
 // 使用する設定を決定
 export const firebaseConfig: FirebaseConfig = isProduction ? prodConfig : devConfig
 
-
 // Vite環境変数の型定義
 declare global {
   interface ImportMetaEnv {
