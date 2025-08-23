@@ -528,6 +528,8 @@ h1 {
 
 .english-header h2 {
   margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .english-header .autosave-status {

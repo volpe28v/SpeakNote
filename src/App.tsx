@@ -1,5 +1,5 @@
 import './style.css'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AppProvider } from './contexts/AppContext'
 import Header from './components/common/Header'
 import NotebookContainer from './components/notebook/NotebookContainer'
@@ -9,6 +9,7 @@ import Toast from './components/common/Toast'
 
 function App() {
   const [activeTab, setActiveTab] = useState('notebook')
+  const resetAutoSaveStatusRef = useRef<(() => void) | null>(null)
 
   // ノート選択時にNotebookタブに切り替える
   useEffect(() => {
@@ -22,6 +23,15 @@ function App() {
     }
   }, [])
 
+  // タブ切り替え時の処理
+  const handleTabChange = (tab: string) => {
+    // 現在表示されているタブから切り替える場合、自動保存ステータスをリセット
+    if (activeTab !== tab && resetAutoSaveStatusRef.current) {
+      resetAutoSaveStatusRef.current()
+    }
+    setActiveTab(tab)
+  }
+
   return (
     <AppProvider>
       <div className="app">
@@ -31,13 +41,13 @@ function App() {
           <div className="tabs-header">
             <button
               className={`tab-button ${activeTab === 'notebook' ? 'active' : ''}`}
-              onClick={() => setActiveTab('notebook')}
+              onClick={() => handleTabChange('notebook')}
             >
               Notebook
             </button>
             <button
               className={`tab-button ${activeTab === 'notes-list' ? 'active' : ''}`}
-              onClick={() => setActiveTab('notes-list')}
+              onClick={() => handleTabChange('notes-list')}
             >
               Index
             </button>
@@ -45,7 +55,7 @@ function App() {
           <div className="tab-content">
             {/* 両方のコンポーネントを常にマウントし、表示/非表示で切り替え */}
             <div style={{ display: activeTab === 'notebook' ? 'block' : 'none' }}>
-              <NotebookContainer />
+              <NotebookContainer resetAutoSaveStatusRef={resetAutoSaveStatusRef} />
             </div>
             <div style={{ display: activeTab === 'notes-list' ? 'block' : 'none' }}>
               <NotesList />

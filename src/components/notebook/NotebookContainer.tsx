@@ -7,7 +7,11 @@ import { useAutoSave } from '../../hooks/useAutoSave'
 import CodeMirrorEditor from '../common/CodeMirrorEditor'
 import AutoSaveStatus from '../common/AutoSaveStatus'
 
-function NotebookContainer() {
+interface NotebookContainerProps {
+  resetAutoSaveStatusRef: React.MutableRefObject<(() => void) | null>
+}
+
+function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const { auth, translation, notes, unsavedChanges } = useApp()
   const { user, authManager, firestoreManager } = auth
   const {
@@ -29,7 +33,7 @@ function NotebookContainer() {
   const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
 
   // 自動保存機能
-  const { isAutoSaving, lastAutoSavedAt, autoSaveError } = useAutoSave({
+  const { isAutoSaving, lastAutoSavedAt, autoSaveError, resetAutoSaveStatus } = useAutoSave({
     text: englishText,
     translations: translationLines,
     originalContent,
@@ -47,6 +51,11 @@ function NotebookContainer() {
     minCharsForSave: 10,
     enabled: !!user,
   })
+
+  // 親コンポーネントから呼び出せるようにresetAutoSaveStatusを設定
+  useEffect(() => {
+    resetAutoSaveStatusRef.current = resetAutoSaveStatus
+  }, [resetAutoSaveStatus, resetAutoSaveStatusRef])
 
   useEffect(() => {
     setTranslationText(translationLines.join('\n'))

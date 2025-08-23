@@ -22,6 +22,7 @@ interface AutoSaveState {
   isAutoSaving: boolean
   lastAutoSavedAt: Date | null
   autoSaveError: string | null
+  resetAutoSaveStatus: () => void
 }
 
 export function useAutoSave({
@@ -157,9 +158,20 @@ export function useAutoSave({
     }
   }, [])
 
+  // 外部からのリセット機能
+  const resetAutoSaveStatus = useCallback(() => {
+    setLastAutoSavedAt(null)
+    setAutoSaveError(null)
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+  }, [])
+
   return {
     isAutoSaving,
     lastAutoSavedAt,
     autoSaveError,
+    resetAutoSaveStatus,
   }
 }

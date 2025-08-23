@@ -1,4 +1,3 @@
-
 interface AutoSaveStatusProps {
   isAutoSaving: boolean
   lastAutoSavedAt: Date | null
