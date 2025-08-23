@@ -12,7 +12,8 @@
           "fieldPath": "updatedAt",
           "order": "DESCENDING"
         }
-      ]
+      ],
+      "density": "SPARSE_ALL"
     }
   ],
   "fieldOverrides": []
