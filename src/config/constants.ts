@@ -6,7 +6,7 @@ export const APP_VERSION = '1.1.0'
 
 // Google Apps Script translation API URL
 export const GAS_TRANSLATE_URL =
-  'https://script.google.com/macros/s/AKfycbyTSE6S8wnGYDQhQ3gKeVwIiDt3uwlxZoUBFfJ3YCrc1dCn76sQR3YJ5bM2vsuVEboc/exec'
+  'https://script.google.com/macros/s/AKfycby-Q8nJL9dNrOK2mtt0ogNRF_tux9Qch6GB9Pu4D-KwBezZ1U4_xPUtK-0kXDufzxoW/exec'
 
 // UI text strings
 export const UI_STRINGS: UIStrings = {

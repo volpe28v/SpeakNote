@@ -22,10 +22,27 @@ export function useTranslation(): UseTranslationReturn {
       return 'Translation API not configured'
     }
 
+    // 文字数チェック（5000文字推奨）
+    if (text.length > 5000) {
+      console.warn(`Text length (${text.length} characters) exceeds recommended limit (5000 characters)`)
+      // 長文でも処理は続行するが、警告を表示
+      setTimeout(() => toast.warning('Text exceeds 5000 characters. Translation may be slow or fail.'), 100)
+    }
+
     try {
-      const response = await fetch(
-        `${GAS_TRANSLATE_URL}?text=${encodeURIComponent(text)}&source=en&target=ja`
-      )
+      // POSTリクエストに変更（CORSエラー回避のためtext/plainを使用）
+      const response = await fetch(GAS_TRANSLATE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({
+          text: text,
+          source: 'en',
+          target: 'ja'
+        })
+      })
+      
       const data = await response.json()
 
       if (data.success) {
@@ -36,6 +53,10 @@ export function useTranslation(): UseTranslationReturn {
       }
     } catch (error) {
       console.error('Network error:', error)
+      // より詳細なエラーメッセージ
+      if (error instanceof Error) {
+        return `Translation failed: ${error.message}`
+      }
       return 'Network error: Translation failed'
     }
   }, [])
