@@ -22,11 +22,16 @@ export function useTranslation(): UseTranslationReturn {
       return 'Translation API not configured'
     }
 
-    // 文字数チェック（5000文字推奨）
-    if (text.length > 5000) {
-      console.warn(`Text length (${text.length} characters) exceeds recommended limit (5000 characters)`)
-      // 長文でも処理は続行するが、警告を表示
-      setTimeout(() => toast.warning('Text exceeds 5000 characters. Translation may be slow or fail.'), 100)
+    // 文字数チェック（25000文字で警告、30000文字が上限）
+    if (text.length > 25000) {
+      console.warn(
+        `Text length (${text.length} characters) exceeds 25000 characters - approaching maximum limit`
+      )
+      // 上限（30000文字）に近づいているため警告を表示
+      setTimeout(
+        () => toast.warning('Text exceeds 25000 characters. Translation may fail (max: 30000).'),
+        100
+      )
     }
 
     try {
@@ -39,10 +44,10 @@ export function useTranslation(): UseTranslationReturn {
         body: JSON.stringify({
           text: text,
           source: 'en',
-          target: 'ja'
-        })
+          target: 'ja',
+        }),
       })
-      
+
       const data = await response.json()
 
       if (data.success) {
