@@ -29,9 +29,46 @@ export const SPEECH_CONFIG: Record<string, SpeechConfig> = {
   },
 }
 
-// Web Speech APIの確認
+// 音声リストが読み込まれているか確認し、必要に応じて読み込む
+let voicesLoaded = false
+
+// Web Speech APIの確認と初期化
 export function checkSpeechSynthesisSupport(): boolean {
-  return 'speechSynthesis' in window
+  if ('speechSynthesis' in window) {
+    // 音声リストの初期読み込みをトリガー
+    if (!voicesLoaded) {
+      window.speechSynthesis.getVoices()
+
+      // 音声リストの読み込み完了を待つ
+      window.speechSynthesis.onvoiceschanged = () => {
+        voicesLoaded = true
+      }
+    }
+    return true
+  }
+  return false
+}
+
+// 利用可能な音声を取得し、適切な音声を選択する関数
+function selectVoice(lang: string): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices()
+
+  // 優先順位で音声を選択
+  // 1. 完全一致する言語コードの音声
+  let voice = voices.find((v) => v.lang === lang)
+
+  // 2. 言語コードの前半が一致する音声（例: en-GB が見つからない場合は en-US など）
+  if (!voice) {
+    const langPrefix = lang.split('-')[0]
+    voice = voices.find((v) => v.lang.startsWith(langPrefix))
+  }
+
+  // 3. デフォルトの音声
+  if (!voice && lang.startsWith('en')) {
+    voice = voices.find((v) => v.lang.includes('en'))
+  }
+
+  return voice || null
 }
 
 // 音声合成用のUtteranceを作成する共通関数
@@ -41,6 +78,13 @@ export function createUtterance(text: string, config: SpeechConfig): SpeechSynth
   utterance.rate = config.rate
   utterance.pitch = config.pitch
   utterance.volume = config.volume
+
+  // 適切な音声を選択して設定
+  const voice = selectVoice(config.lang)
+  if (voice) {
+    utterance.voice = voice
+  }
+
   return utterance
 }
 

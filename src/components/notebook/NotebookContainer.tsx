@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useApp } from '../../contexts/AppContext'
 import { speakEnglish, speakJapanese } from '../../lib/speech'
 import { toast } from '../../lib/toast'
@@ -31,6 +31,26 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const [selectedText, setSelectedText] = useState('')
   const [showSelectionButton, setShowSelectionButton] = useState(false)
   const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
+
+  // モバイルでの表示制御
+  const [currentView, setCurrentView] = useState<'english' | 'japanese'>('english')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 390)
+
+  // 画面サイズの変更を監視
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 390)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // ビュー切り替えハンドラー
+  const toggleView = () => {
+    setCurrentView((prev) => (prev === 'english' ? 'japanese' : 'english'))
+  }
 
   // 自動保存機能
   const { isAutoSaving, lastAutoSavedAt, autoSaveError, resetAutoSaveStatus } = useAutoSave({
@@ -211,91 +231,111 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const disabled = !user
 
   return (
-    <div id="notebook-container" className={disabled ? 'disabled-overlay' : ''}>
-      <div id="english-side" className="notebook-side">
-        <div className="english-header">
-          <h2>
-            English
-            {hasUnsavedChanges && !isAutoSaving && <span className="unsaved-indicator">●</span>}
-          </h2>
-          {user && (
-            <AutoSaveStatus
-              isAutoSaving={isAutoSaving}
-              lastAutoSavedAt={lastAutoSavedAt}
-              autoSaveError={autoSaveError}
-              hasUnsavedChanges={hasUnsavedChanges}
-            />
+    <div
+      id="notebook-container"
+      ref={containerRef}
+      className={`${disabled ? 'disabled-overlay' : ''} ${isMobile ? `mobile-view ${currentView}-active` : ''}`}
+    >
+      <div className="notebook-slides">
+        <div id="english-side" className="notebook-side">
+          {isMobile && (
+            <button className="view-indicators" onClick={toggleView}>
+              <span className={currentView === 'english' ? 'active' : ''}>English</span>
+              <span className="separator">⇄</span>
+              <span className={currentView === 'japanese' ? 'active' : ''}>Japanese</span>
+            </button>
           )}
-        </div>
-        <div id="input-area">
-          <CodeMirrorEditor
-            value={englishText}
-            onChange={setEnglishText}
-            onKeyDown={handleKeyDown}
-            onAutoTranslation={handleAutoTranslation}
-            highlightedLineIndex={highlightedLineIndex}
-            placeholder="Type English here (Enter for translation)"
-            disabled={disabled}
-            className="english-input-editor"
-          />
-          <div className="button-group">
-            <button
-              id="speak-button"
-              onClick={() => speakEnglish(englishText)}
-              disabled={disabled || !englishText.trim()}
-            >
-              Speak
-            </button>
-            <button
-              id="save-button"
-              onClick={handleSave}
-              disabled={disabled || !englishText.trim() || isSaving}
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
-            <button id="clear-button" onClick={handleClear} disabled={disabled}>
-              New
-            </button>
+          <div className="english-header">
+            <h2>
+              English
+              {hasUnsavedChanges && !isAutoSaving && <span className="unsaved-indicator">●</span>}
+            </h2>
+            {user && (
+              <AutoSaveStatus
+                isAutoSaving={isAutoSaving}
+                lastAutoSavedAt={lastAutoSavedAt}
+                autoSaveError={autoSaveError}
+                hasUnsavedChanges={hasUnsavedChanges}
+              />
+            )}
+          </div>
+          <div id="input-area">
+            <CodeMirrorEditor
+              value={englishText}
+              onChange={setEnglishText}
+              onKeyDown={handleKeyDown}
+              onAutoTranslation={handleAutoTranslation}
+              highlightedLineIndex={highlightedLineIndex}
+              placeholder="Type English here (Enter for translation)"
+              disabled={disabled}
+              className="english-input-editor"
+            />
+            <div className="button-group">
+              <button
+                id="speak-button"
+                onClick={() => speakEnglish(englishText)}
+                disabled={disabled || !englishText.trim()}
+              >
+                Speak
+              </button>
+              <button
+                id="save-button"
+                onClick={handleSave}
+                disabled={disabled || !englishText.trim() || isSaving}
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+              <button id="clear-button" onClick={handleClear} disabled={disabled}>
+                New
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div id="japanese-side" className="notebook-side">
-        <h2>Japanese</h2>
-        <div id="translation-area">
-          <textarea
-            id="translation-text"
-            value={translationText}
-            readOnly
-            placeholder="Japanese translation will appear here"
-            rows={8}
-            onMouseUp={handleTextSelection}
-            onTouchEnd={handleTextSelection}
-          />
-          <div className="button-group">
-            <button
-              id="translate-button"
-              onClick={handleTranslateClick}
-              disabled={disabled || !englishText.trim() || isTranslating}
-            >
-              {isTranslating ? 'Translating...' : 'Translate'}
+        <div id="japanese-side" className="notebook-side">
+          {isMobile && (
+            <button className="view-indicators" onClick={toggleView}>
+              <span className={currentView === 'english' ? 'active' : ''}>English</span>
+              <span className="separator">⇄</span>
+              <span className={currentView === 'japanese' ? 'active' : ''}>Japanese</span>
             </button>
-            <button
-              id="speak-japanese-button"
-              onClick={() => speakJapanese(translationText)}
-              disabled={disabled || !translationText.trim()}
-            >
-              Speak JP
-            </button>
-            {showSelectionButton && (
+          )}
+          <h2>Japanese</h2>
+          <div id="translation-area">
+            <textarea
+              id="translation-text"
+              value={translationText}
+              readOnly
+              placeholder="Japanese translation will appear here"
+              rows={8}
+              onMouseUp={handleTextSelection}
+              onTouchEnd={handleTextSelection}
+            />
+            <div className="button-group">
               <button
-                id="speak-selection-button"
-                onClick={handleSpeakSelection}
-                disabled={disabled}
+                id="translate-button"
+                onClick={handleTranslateClick}
+                disabled={disabled || !englishText.trim() || isTranslating}
               >
-                Selected
+                {isTranslating ? 'Translating...' : 'Translate'}
               </button>
-            )}
+              <button
+                id="speak-japanese-button"
+                onClick={() => speakJapanese(translationText)}
+                disabled={disabled || !translationText.trim()}
+              >
+                Speak JP
+              </button>
+              {showSelectionButton && (
+                <button
+                  id="speak-selection-button"
+                  onClick={handleSpeakSelection}
+                  disabled={disabled}
+                >
+                  Selected
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
