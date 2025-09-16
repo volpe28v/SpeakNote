@@ -1,0 +1,24 @@
+{
+  "name": "SpeakNote",
+  "short_name": "SpeakNote",
+  "description": "English Learning App for Kids",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fefcf3",
+  "theme_color": "#78716c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}

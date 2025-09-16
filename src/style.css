@@ -1017,6 +1017,12 @@ h1 {
     margin-bottom: 0;
   }
 
+  /* モバイル表示時は見出しを非表示にして表示領域を節約 */
+  #notebook-container.mobile-view .english-header,
+  #notebook-container.mobile-view #japanese-side h2 {
+    display: none;
+  }
+
   /* 英語エリアのレイアウト調整 */
   #notebook-container.mobile-view #english-side {
     display: flex;
@@ -1038,13 +1044,14 @@ h1 {
     min-height: 100px !important;
     max-height: none !important;
     height: 100% !important;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom)) !important;
   }
 
   #notebook-container.mobile-view #english-side .button-group {
     position: sticky;
     bottom: 0;
     background: linear-gradient(135deg, #fefcf3 0%, #faf7ed 100%);
-    padding: 10px 0;
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
     margin-top: auto;
   }
 
@@ -1065,13 +1072,14 @@ h1 {
     flex: 1;
     min-height: 100px;
     max-height: none;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
   }
 
   #notebook-container.mobile-view #japanese-side .button-group {
     position: sticky;
     bottom: 0;
     background: linear-gradient(135deg, #fefcf3 0%, #faf7ed 100%);
-    padding: 10px 0;
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
     margin-top: auto;
   }
   body {
@@ -1084,6 +1092,7 @@ h1 {
     min-height: 100vh;
     height: 100vh;
     overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
   .header {

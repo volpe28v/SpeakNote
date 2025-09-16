@@ -64,6 +64,10 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       if (result) {
         // 自動保存成功時に元のcontentを更新して未保存状態を解消
         setOriginalContent(text)
+        // 新規ノートの場合はIDを設定（履歴の重複を防ぐ）
+        if (result.type === 'saved' && result.id) {
+          setCurrentEditingId(result.id)
+        }
       }
       return result
     },

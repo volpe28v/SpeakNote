@@ -5,13 +5,13 @@ import type { SpeechConfig } from '@/types'
 export const SPEECH_CONFIG: Record<string, SpeechConfig> = {
   ENGLISH: {
     lang: 'en-GB',
-    rate: 0.7,
+    rate: 1.0,
     pitch: 1.0,
     volume: 1.0,
   },
   ENGLISH_QUESTION: {
     lang: 'en-GB',
-    rate: 0.7,
+    rate: 1.0,
     pitch: 1.2,
     volume: 1.0,
   },
