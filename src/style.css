@@ -1225,6 +1225,50 @@ h1 {
     transform: scale(0.9);
   }
 
+  /* Index画面のリストをコンパクトに */
+  #saved-sentences-container {
+    padding: 8px;
+  }
+
+  #saved-sentences-list {
+    gap: 8px;
+  }
+
+  .saved-sentence-item {
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .saved-sentence-item::before {
+    width: 3px;
+  }
+
+  .sentence-content {
+    padding-left: 4px;
+  }
+
+  .sentence-english {
+    font-size: 14px;
+    line-height: 1.3;
+    margin-bottom: 2px;
+  }
+
+  .sentence-japanese {
+    font-size: 12px;
+    line-height: 1.3;
+    padding-left: 0;
+  }
+
+  .sentence-buttons {
+    gap: 4px;
+  }
+
+  .action-button {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
   /* トーストの位置調整 */
   #toast-container {
     bottom: 10px;
