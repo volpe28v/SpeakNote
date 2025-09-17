@@ -4,6 +4,7 @@ import { EditorView, Decoration, keymap } from '@codemirror/view'
 import { EditorState, Extension } from '@codemirror/state'
 import { speakEnglish, createUtterance, SPEECH_CONFIG } from '../../lib/speech'
 import { spellCheckField, initSpellCheck, setUpdateCallback } from '../../lib/spellcheck'
+import { keySoundManager } from '../../lib/keySound'
 
 interface CodeMirrorEditorProps {
   value: string
@@ -126,10 +127,19 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     return words[words.length - 1] || ''
   }
 
+  // 通常のキー入力を処理するハンドラ
+  const handleNormalKeyInput = () => {
+    keySoundManager.playKeySound()
+    return false // デフォルトの入力動作を続行
+  }
+
   const keymapExtension = keymap.of([
     {
       key: 'Enter',
       run: (view) => {
+        // Enter音を再生
+        keySoundManager.playEnterSound()
+
         // 改行前の状態でカーソル位置の行を取得
         const { from } = view.state.selection.main
         const line = view.state.doc.lineAt(from)
@@ -158,6 +168,9 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     {
       key: 'Space',
       run: (view) => {
+        // スペース音を再生
+        keySoundManager.playSpaceSound()
+
         const currentLine = getCurrentLine(view.state)
         const lastChar = currentLine.slice(-1)
         const isPunctuationBefore = /[.!?]/.test(lastChar)
@@ -177,6 +190,9 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     {
       key: '.',
       run: (view) => {
+        // キー音を再生
+        keySoundManager.playKeySound()
+
         // ピリオド入力前の状態でカーソル位置の行を取得
         const { from } = view.state.selection.main
         const line = view.state.doc.lineAt(from)
@@ -194,6 +210,9 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     {
       key: '?',
       run: (view) => {
+        // キー音を再生
+        keySoundManager.playKeySound()
+
         // 疑問符入力前の状態でカーソル位置の行を取得
         const { from } = view.state.selection.main
         const line = view.state.doc.lineAt(from)
@@ -211,6 +230,9 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     {
       key: '!',
       run: (view) => {
+        // キー音を再生
+        keySoundManager.playKeySound()
+
         // 感嘆符入力前の状態でカーソル位置の行を取得
         const { from } = view.state.selection.main
         const line = view.state.doc.lineAt(from)
@@ -223,6 +245,14 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
           window.speechSynthesis.speak(utterance)
         }
         return false
+      },
+    },
+    {
+      key: 'Backspace',
+      run: () => {
+        // バックスペース音を再生
+        keySoundManager.playDeleteSound()
+        return false // デフォルトの削除動作を続行
       },
     },
   ])
@@ -257,8 +287,30 @@ function CodeMirrorEditor({
   const extensions = React.useMemo(() => {
     const speechKeymap = createSpeechKeymap(onAutoTranslation)
 
+    // 通常のキー入力に対してキータイプ音を再生
+    const keydownHandler = EditorView.domEventHandlers({
+      keydown: (event) => {
+        const key = event.key
+        // 特殊キー以外の通常の文字入力を検出
+        if (
+          key.length === 1 && // 単一文字
+          !event.ctrlKey && // Ctrlキーが押されていない
+          !event.metaKey && // Cmdキーが押されていない
+          !event.altKey && // Altキーが押されていない
+          key !== ' ' && // スペース以外（スペースは別途処理）
+          key !== '.' && // ピリオド以外（別途処理）
+          key !== '?' && // 疑問符以外（別途処理）
+          key !== '!' // 感嘆符以外（別途処理）
+        ) {
+          keySoundManager.playKeySound()
+        }
+        return false
+      },
+    })
+
     const baseExtensions = [
       speechKeymap, // キーマップを最初に配置して優先度を高くする
+      keydownHandler, // キー入力音のハンドラ
       noteTheme,
       EditorView.lineWrapping,
       EditorState.readOnly.of(disabled),
