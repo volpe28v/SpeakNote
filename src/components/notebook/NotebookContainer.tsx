@@ -294,6 +294,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
 
     if (selectedText && translationText.includes(selectedText)) {
       setSelectedText(selectedText)
+      setSelectedEnglishText('') // 英語の選択状態をクリア
 
       // 日本語選択部分の行数を取得
       const lineNumber = getSelectedLineNumber('translation-text')
@@ -311,6 +312,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     if (selectedText && englishText.includes(selectedText)) {
       // 英語が選択されたとき、対応する日本語行をハイライト
       setSelectedEnglishText(selectedText)
+      setSelectedText('') // 日本語の選択状態をクリア
       setHighlightedJapaneseLineIndex(lineNumber)
       setHighlightedLineIndex(null) // 英語のハイライトをクリア
     } else {
