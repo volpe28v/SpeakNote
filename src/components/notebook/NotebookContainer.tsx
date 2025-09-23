@@ -184,28 +184,31 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const handleTranslateClick = async () => {
     await handleTranslate(englishText)
     // 手動翻訳後も日本語訳エリアを一番下にスクロール
-    setTimeout(() => {
-      const translationTextarea = document.getElementById('translation-text') as HTMLTextAreaElement
-      if (translationTextarea) {
-        translationTextarea.scrollTop = translationTextarea.scrollHeight
-      }
-    }, 100)
+    scrollJapaneseToBottom()
   }
 
   const handleAutoTranslation = async () => {
     const { performAutoTranslation } = translation
     await performAutoTranslation(englishText)
     // 自動翻訳後、日本語訳エリアを一番下にスクロール
-    setTimeout(() => {
-      const translationTextarea = document.getElementById('translation-text') as HTMLTextAreaElement
-      if (translationTextarea) {
-        translationTextarea.scrollTop = translationTextarea.scrollHeight
-      }
-    }, 100)
+    scrollJapaneseToBottom()
   }
 
   const handleKeyDown = async () => {
     // CodeMirrorでは独自のキーマップで処理するため、ここでは何もしない
+  }
+
+  // 日本語CodeMirrorエディタを最下部にスクロールする関数
+  const scrollJapaneseToBottom = () => {
+    setTimeout(() => {
+      // CodeMirrorエディタのスクローラー要素を取得
+      const japaneseEditor = document.querySelector(
+        '.japanese-input-editor .cm-scroller'
+      ) as HTMLElement
+      if (japaneseEditor) {
+        japaneseEditor.scrollTop = japaneseEditor.scrollHeight
+      }
+    }, 100)
   }
 
   const handleJapaneseSelection = (selectedText: string, lineNumber: number | null) => {
