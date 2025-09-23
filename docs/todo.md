@@ -1,6 +1,84 @@
-# SpeakNote 実装ステップ
+# SpeakNote リファクタリング計画
 
-## 🚀 実装進捗
+## 🔥 最優先：NotebookContainer.tsx の責務分離
+
+**現状の問題点:**
+
+- 1つのコンポーネントに多すぎる責務（426行）
+- useEffectフックが8個と多すぎる
+- 複雑な選択・ハイライト処理ロジック
+
+**解決策:**
+以下のカスタムフックに分離して責務を明確化：
+
+### 1. useNotebookState
+
+- `englishText`, `translationText`の管理
+- `originalContent`, `currentView`の管理
+- 基本的な状態管理を担当
+
+### 2. useHighlightState
+
+- `highlightedLineIndex`, `highlightedJapaneseLineIndex`の管理
+- `selectedText`, `selectedEnglishText`の管理
+- 選択・ハイライト関連の状態を集約
+
+### 3. useNotebookActions
+
+- `handleSave`, `handleClear`の処理
+- `handleTranslateClick`, `handleAutoTranslation`の処理
+- アクション系の処理を集約
+
+### 4. useSelectionHandlers
+
+- `handleJapaneseSelection`, `handleEnglishSelection`の処理
+- 双方向選択処理のロジックを集約
+
+### 5. useSpeechHandlers
+
+- `handleSpeakEnglish`, `handleSpeakJapanese`の処理
+- `getOriginalJapaneseText`のロジックを集約
+
+### 6. NotebookContainer統合
+
+- 各カスタムフックを組み合わせてシンプルなコンポーネントに
+
+## 🔶 高優先度（次回以降）
+
+### 音声処理とCodeMirrorエディタの結合度削減
+
+- `createSpeechKeymap()` → 独立したファイルに移動
+- 音声処理ロジック → `useSpeech` フック化
+- キーサウンド処理 → `useKeySound` フック化
+
+### 重複するuseEffectの統合
+
+- 似たような処理のuseEffectを統合
+- 依存配列の単純化
+
+### 型定義の整理
+
+- `src/types/index.ts` 作成
+- 共通型定義の集約
+
+### 設定値の外部化
+
+- エディタ設定のconfig化
+- 音声設定の外部化
+
+## 進捗
+
+- [x] リファクタリング計画の策定
+- [ ] useNotebookState の作成
+- [ ] useHighlightState の作成
+- [ ] useNotebookActions の作成
+- [ ] useSelectionHandlers の作成
+- [ ] useSpeechHandlers の作成
+- [ ] NotebookContainer での統合
+
+---
+
+## 🚀 以前の実装履歴
 
 ### フェーズ1: コア機能（発音機能）
 
