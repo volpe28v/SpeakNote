@@ -29,7 +29,6 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const [translationText, setTranslationText] = useState('')
   const [originalContent, setOriginalContent] = useState('')
   const [selectedText, setSelectedText] = useState('')
-  const [showSelectionButton, setShowSelectionButton] = useState(false)
   const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
   const [highlightedJapaneseLineIndex, setHighlightedJapaneseLineIndex] = useState<number | null>(null)
 
@@ -294,7 +293,6 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
 
     if (selectedText && translationText.includes(selectedText)) {
       setSelectedText(selectedText)
-      setShowSelectionButton(true)
 
       // 日本語選択部分の行数を取得
       const lineNumber = getSelectedLineNumber('translation-text')
@@ -304,7 +302,6 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       setHighlightedJapaneseLineIndex(null) // 日本語のハイライトをクリア
     } else {
       setSelectedText('')
-      setShowSelectionButton(false)
       setHighlightedLineIndex(null)
     }
   }
@@ -319,10 +316,27 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     }
   }
 
-  const handleSpeakSelection = () => {
+  const handleSpeakJapanese = () => {
+    // 1. 日本語テキストが選択されている場合
     if (selectedText) {
       speakJapanese(selectedText)
+      return
     }
+    
+    // 2. 英語が選択されて日本語がハイライトされている場合
+    if (highlightedJapaneseLineIndex !== null && highlightedJapaneseLineIndex >= 0) {
+      const lines = translationText.split('\n')
+      if (highlightedJapaneseLineIndex < lines.length) {
+        const lineToSpeak = lines[highlightedJapaneseLineIndex]
+        if (lineToSpeak.trim()) {
+          speakJapanese(lineToSpeak.trim())
+          return
+        }
+      }
+    }
+    
+    // 3. どちらも選択されていない場合は全文を読み上げ
+    speakJapanese(translationText)
   }
 
   const disabled = !user
@@ -421,20 +435,11 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               </button>
               <button
                 id="speak-japanese-button"
-                onClick={() => speakJapanese(translationText)}
+                onClick={handleSpeakJapanese}
                 disabled={disabled || !translationText.trim()}
               >
                 Speak JP
               </button>
-              {showSelectionButton && (
-                <button
-                  id="speak-selection-button"
-                  onClick={handleSpeakSelection}
-                  disabled={disabled}
-                >
-                  Selected
-                </button>
-              )}
             </div>
           </div>
         </div>
