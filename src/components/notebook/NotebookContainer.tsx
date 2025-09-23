@@ -31,6 +31,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const [selectedText, setSelectedText] = useState('')
   const [showSelectionButton, setShowSelectionButton] = useState(false)
   const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
+  const [highlightedJapaneseLineIndex, setHighlightedJapaneseLineIndex] = useState<number | null>(null)
 
   // モバイルでの表示制御
   const [currentView, setCurrentView] = useState<'english' | 'japanese'>('english')
@@ -84,6 +85,87 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   useEffect(() => {
     setTranslationText(translationLines.join('\n'))
   }, [translationLines])
+
+  // 日本語テキストエリアのハイライト効果
+  useEffect(() => {
+    const textarea = document.getElementById('translation-text') as HTMLTextAreaElement
+    const wrapper = document.querySelector('.textarea-highlight-wrapper') as HTMLElement
+    if (!textarea || !wrapper) return
+
+    // 既存のハイライトオーバーレイを削除
+    const existingOverlay = wrapper.querySelector('.japanese-highlight-overlay')
+    if (existingOverlay) {
+      existingOverlay.remove()
+    }
+
+    if (highlightedJapaneseLineIndex !== null && highlightedJapaneseLineIndex >= 0) {
+      const lines = translationText.split('\n')
+      if (highlightedJapaneseLineIndex < lines.length) {
+        // ハイライトオーバーレイを作成
+        const overlay = document.createElement('div')
+        overlay.className = 'japanese-highlight-overlay'
+        
+        // textareaのスタイルを取得
+        const computedStyle = getComputedStyle(textarea)
+        const fontSize = parseFloat(computedStyle.fontSize) || 22
+        const lineHeightValue = computedStyle.lineHeight
+        // line-heightが数値の場合と、'normal'や'%'の場合を処理
+        let lineHeight: number
+        if (lineHeightValue === 'normal') {
+          lineHeight = fontSize * 1.2 // normalの場合の標準値
+        } else if (lineHeightValue.endsWith('px')) {
+          lineHeight = parseFloat(lineHeightValue)
+        } else {
+          // line-heightが倍数値の場合（例: "1.6"）
+          lineHeight = fontSize * parseFloat(lineHeightValue)
+        }
+        
+        const paddingTop = parseFloat(computedStyle.paddingTop) || 0
+        const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0
+        const paddingRight = parseFloat(computedStyle.paddingRight) || 0
+        
+        // ハイライトする行の位置を計算
+        const topPosition = paddingTop + (highlightedJapaneseLineIndex * lineHeight) - textarea.scrollTop
+        
+        overlay.style.position = 'absolute'
+        overlay.style.left = `${paddingLeft}px`
+        overlay.style.right = `${paddingRight}px`
+        overlay.style.top = `${topPosition}px`
+        overlay.style.height = `${lineHeight}px`
+        overlay.style.backgroundColor = '#fff3cd'
+        overlay.style.borderRadius = '3px'
+        overlay.style.pointerEvents = 'none'
+        overlay.style.zIndex = '1'
+        overlay.style.animation = 'highlight-pulse 0.6s ease-in-out'
+        overlay.style.boxShadow = '0 0 8px rgba(255, 193, 7, 0.4)'
+        
+        // wrapperを相対位置にして、オーバーレイを正しく配置
+        wrapper.style.position = 'relative'
+        textarea.style.position = 'relative'
+        textarea.style.zIndex = '2'
+        textarea.style.backgroundColor = 'transparent'
+        
+        wrapper.appendChild(overlay)
+
+        // ハイライトされた行にスクロール
+        const scrollPosition = highlightedJapaneseLineIndex * lineHeight
+        textarea.scrollTop = scrollPosition - (textarea.clientHeight / 2 - lineHeight / 2)
+        
+        // スクロールイベントでオーバーレイ位置を更新
+        const handleScroll = () => {
+          const newTopPosition = paddingTop + (highlightedJapaneseLineIndex * lineHeight) - textarea.scrollTop
+          overlay.style.top = `${newTopPosition}px`
+        }
+        
+        textarea.addEventListener('scroll', handleScroll)
+        
+        // クリーンアップ
+        return () => {
+          textarea.removeEventListener('scroll', handleScroll)
+        }
+      }
+    }
+  }, [highlightedJapaneseLineIndex, translationText])
 
   // 英語テキストの変更を監視して未保存状態を更新
   useEffect(() => {
@@ -219,10 +301,21 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
 
       // 対応する英語行をハイライト
       setHighlightedLineIndex(lineNumber)
+      setHighlightedJapaneseLineIndex(null) // 日本語のハイライトをクリア
     } else {
       setSelectedText('')
       setShowSelectionButton(false)
       setHighlightedLineIndex(null)
+    }
+  }
+
+  const handleEnglishSelection = (selectedText: string, lineNumber: number | null) => {
+    if (selectedText && englishText.includes(selectedText)) {
+      // 英語が選択されたとき、対応する日本語行をハイライト
+      setHighlightedJapaneseLineIndex(lineNumber)
+      setHighlightedLineIndex(null) // 英語のハイライトをクリア
+    } else {
+      setHighlightedJapaneseLineIndex(null)
     }
   }
 
@@ -269,6 +362,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               onChange={setEnglishText}
               onKeyDown={handleKeyDown}
               onAutoTranslation={handleAutoTranslation}
+              onSelectionChange={handleEnglishSelection}
               highlightedLineIndex={highlightedLineIndex}
               placeholder="Type English here (Enter for translation)"
               disabled={disabled}
@@ -306,15 +400,17 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
           )}
           <h2>Japanese</h2>
           <div id="translation-area">
-            <textarea
-              id="translation-text"
-              value={translationText}
-              readOnly
-              placeholder="Japanese translation will appear here"
-              rows={8}
-              onMouseUp={handleTextSelection}
-              onTouchEnd={handleTextSelection}
-            />
+            <div className="textarea-highlight-wrapper">
+              <textarea
+                id="translation-text"
+                value={translationText}
+                readOnly
+                placeholder="Japanese translation will appear here"
+                rows={8}
+                onMouseUp={handleTextSelection}
+                onTouchEnd={handleTextSelection}
+              />
+            </div>
             <div className="button-group">
               <button
                 id="translate-button"

@@ -11,6 +11,7 @@ interface CodeMirrorEditorProps {
   onChange: (value: string) => void
   onKeyDown?: (event: React.KeyboardEvent) => void
   onAutoTranslation?: () => Promise<void>
+  onSelectionChange?: (selectedText: string, lineNumber: number | null) => void
   highlightedLineIndex?: number | null
   placeholder?: string
   disabled?: boolean
@@ -127,11 +128,6 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     return words[words.length - 1] || ''
   }
 
-  // 通常のキー入力を処理するハンドラ
-  const handleNormalKeyInput = () => {
-    keySoundManager.playKeySound()
-    return false // デフォルトの入力動作を続行
-  }
 
   const keymapExtension = keymap.of([
     {
@@ -265,6 +261,7 @@ function CodeMirrorEditor({
   onChange,
   onKeyDown,
   onAutoTranslation,
+  onSelectionChange,
   highlightedLineIndex,
   placeholder = '',
   disabled = false,
@@ -308,9 +305,28 @@ function CodeMirrorEditor({
       },
     })
 
+    // 選択変更時のイベントハンドラ
+    const selectionHandler = EditorView.updateListener.of((update) => {
+      if (update.selectionSet && onSelectionChange) {
+        const { from, to } = update.state.selection.main
+        if (from !== to) {
+          // テキストが選択されている場合
+          const selectedText = update.state.doc.sliceString(from, to)
+          // 選択開始位置の行番号を取得（0ベース）
+          const line = update.state.doc.lineAt(from)
+          const lineNumber = line.number - 1
+          onSelectionChange(selectedText.trim(), lineNumber)
+        } else {
+          // 選択が解除された場合
+          onSelectionChange('', null)
+        }
+      }
+    })
+
     const baseExtensions = [
       speechKeymap, // キーマップを最初に配置して優先度を高くする
       keydownHandler, // キー入力音のハンドラ
+      selectionHandler, // 選択変更のハンドラ
       noteTheme,
       EditorView.lineWrapping,
       EditorState.readOnly.of(disabled),
@@ -333,7 +349,7 @@ function CodeMirrorEditor({
     }
 
     return baseExtensions
-  }, [highlightedLineIndex, disabled, onAutoTranslation])
+  }, [highlightedLineIndex, disabled, onAutoTranslation, onSelectionChange])
 
   // ハイライトされた行が変更された時にスクロール
   React.useEffect(() => {
