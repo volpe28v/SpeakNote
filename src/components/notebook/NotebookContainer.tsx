@@ -31,7 +31,9 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const [selectedText, setSelectedText] = useState('')
   const [selectedEnglishText, setSelectedEnglishText] = useState('')
   const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
-  const [highlightedJapaneseLineIndex, setHighlightedJapaneseLineIndex] = useState<number | null>(null)
+  const [highlightedJapaneseLineIndex, setHighlightedJapaneseLineIndex] = useState<number | null>(
+    null
+  )
 
   // モバイルでの表示制御
   const [currentView, setCurrentView] = useState<'english' | 'japanese'>('english')
@@ -104,7 +106,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
         // ハイライトオーバーレイを作成
         const overlay = document.createElement('div')
         overlay.className = 'japanese-highlight-overlay'
-        
+
         // textareaのスタイルを取得
         const computedStyle = getComputedStyle(textarea)
         const fontSize = parseFloat(computedStyle.fontSize) || 22
@@ -119,14 +121,15 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
           // line-heightが倍数値の場合（例: "1.6"）
           lineHeight = fontSize * parseFloat(lineHeightValue)
         }
-        
+
         const paddingTop = parseFloat(computedStyle.paddingTop) || 0
         const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0
         const paddingRight = parseFloat(computedStyle.paddingRight) || 0
-        
+
         // ハイライトする行の位置を計算
-        const topPosition = paddingTop + (highlightedJapaneseLineIndex * lineHeight) - textarea.scrollTop
-        
+        const topPosition =
+          paddingTop + highlightedJapaneseLineIndex * lineHeight - textarea.scrollTop
+
         overlay.style.position = 'absolute'
         overlay.style.left = `${paddingLeft}px`
         overlay.style.right = `${paddingRight}px`
@@ -138,27 +141,28 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
         overlay.style.zIndex = '1'
         overlay.style.animation = 'highlight-pulse 0.6s ease-in-out'
         overlay.style.boxShadow = '0 0 8px rgba(255, 193, 7, 0.4)'
-        
+
         // wrapperを相対位置にして、オーバーレイを正しく配置
         wrapper.style.position = 'relative'
         textarea.style.position = 'relative'
         textarea.style.zIndex = '2'
         textarea.style.backgroundColor = 'transparent'
-        
+
         wrapper.appendChild(overlay)
 
         // ハイライトされた行にスクロール
         const scrollPosition = highlightedJapaneseLineIndex * lineHeight
         textarea.scrollTop = scrollPosition - (textarea.clientHeight / 2 - lineHeight / 2)
-        
+
         // スクロールイベントでオーバーレイ位置を更新
         const handleScroll = () => {
-          const newTopPosition = paddingTop + (highlightedJapaneseLineIndex * lineHeight) - textarea.scrollTop
+          const newTopPosition =
+            paddingTop + highlightedJapaneseLineIndex * lineHeight - textarea.scrollTop
           overlay.style.top = `${newTopPosition}px`
         }
-        
+
         textarea.addEventListener('scroll', handleScroll)
-        
+
         // クリーンアップ
         return () => {
           textarea.removeEventListener('scroll', handleScroll)
@@ -327,7 +331,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       speakEnglish(selectedEnglishText)
       return
     }
-    
+
     // 2. 日本語が選択されて英語がハイライトされている場合
     if (highlightedLineIndex !== null && highlightedLineIndex >= 0) {
       const lines = englishText.split('\n')
@@ -339,7 +343,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
         }
       }
     }
-    
+
     // 3. どちらも選択されていない場合は全文を読み上げ
     speakEnglish(englishText)
   }
@@ -350,7 +354,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       speakJapanese(selectedText)
       return
     }
-    
+
     // 2. 英語が選択されて日本語がハイライトされている場合
     if (highlightedJapaneseLineIndex !== null && highlightedJapaneseLineIndex >= 0) {
       const lines = translationText.split('\n')
@@ -362,7 +366,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
         }
       }
     }
-    
+
     // 3. どちらも選択されていない場合は全文を読み上げ
     speakJapanese(translationText)
   }

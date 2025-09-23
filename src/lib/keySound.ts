@@ -15,7 +15,8 @@ class KeySoundManager {
 
   private initAudioContext() {
     if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      this.audioContext = new (window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
     }
   }
 
@@ -183,7 +184,7 @@ class KeySoundManager {
       oscillator.frequency.setValueAtTime(2500, currentTime)
       oscillator.frequency.exponentialRampToValueAtTime(1500, currentTime + 0.004)
 
-      gainNode.gain.setValueAtTime(this.volume * 0.10, currentTime)
+      gainNode.gain.setValueAtTime(this.volume * 0.1, currentTime)
       gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.012)
 
       oscillator.start(currentTime)

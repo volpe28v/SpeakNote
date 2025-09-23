@@ -128,7 +128,6 @@ const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     return words[words.length - 1] || ''
   }
 
-
   const keymapExtension = keymap.of([
     {
       key: 'Enter',
