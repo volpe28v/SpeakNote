@@ -289,7 +289,18 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       return
     }
 
-    // 2. 英語が選択されている場合は、対応する元の日本語翻訳を読み上げ
+    // 2. 英語が選択されて日本語がハイライトされている場合
+    if (highlightedJapaneseLineIndex !== null && highlightedJapaneseLineIndex >= 0) {
+      if (highlightedJapaneseLineIndex < translationLines.length) {
+        const lineToSpeak = translationLines[highlightedJapaneseLineIndex]
+        if (lineToSpeak && lineToSpeak.trim()) {
+          speakJapanese(lineToSpeak.trim())
+          return
+        }
+      }
+    }
+
+    // 3. 英語が選択されている場合は、対応する元の日本語翻訳を読み上げ（フォールバック）
     if (selectedEnglishText) {
       const originalJapanese = getOriginalJapaneseText()
       if (originalJapanese && originalJapanese.trim()) {
@@ -298,7 +309,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       }
     }
 
-    // 3. どちらも選択されていない場合は全文を読み上げ
+    // 4. どちらも選択されていない場合は全文を読み上げ
     speakJapanese(translationText)
   }
 
