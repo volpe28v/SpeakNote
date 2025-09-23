@@ -1,10 +1,11 @@
 import React from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { EditorView, Decoration, keymap } from '@codemirror/view'
+import { EditorView, Decoration } from '@codemirror/view'
 import { EditorState, Extension } from '@codemirror/state'
-import { speakEnglish, createUtterance, SPEECH_CONFIG } from '../../lib/speech'
+import { speakEnglish } from '../../lib/speech'
 import { spellCheckField, initSpellCheck, setUpdateCallback } from '../../lib/spellcheck'
-import { keySoundManager } from '../../lib/keySound'
+import { createSpeechKeymap } from '../../lib/codeMirrorKeymap'
+import { useKeySound } from '../../hooks/useKeySound'
 
 interface CodeMirrorEditorProps {
   value: string
@@ -115,145 +116,6 @@ const noteTheme = EditorView.theme({
   },
 })
 
-// CodeMirror用のキーマップ作成関数
-const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
-  const getCurrentLine = (state: EditorState): string => {
-    const { from } = state.selection.main
-    const line = state.doc.lineAt(from)
-    return line.text
-  }
-
-  const getLastWord = (text: string): string => {
-    const words = text.trim().split(/\s+/)
-    return words[words.length - 1] || ''
-  }
-
-  const keymapExtension = keymap.of([
-    {
-      key: 'Enter',
-      run: (view) => {
-        // Enter音を再生
-        keySoundManager.playEnterSound()
-
-        // 改行前の状態でカーソル位置の行を取得
-        const { from } = view.state.selection.main
-        const line = view.state.doc.lineAt(from)
-        const currentLine = line.text
-
-        // 改行処理の前に音声と翻訳を実行
-        if (currentLine.trim()) {
-          speakEnglish(currentLine.trim(), false)
-          if (onAutoTranslation) {
-            setTimeout(() => {
-              onAutoTranslation().catch((error) => {
-                console.error('Auto translation error:', error)
-              })
-            }, 100)
-          }
-        }
-
-        // デフォルトの改行動作を実行
-        view.dispatch({
-          changes: { from: view.state.selection.main.head, insert: '\n' },
-        })
-
-        return true
-      },
-    },
-    {
-      key: 'Space',
-      run: (view) => {
-        // スペース音を再生
-        keySoundManager.playSpaceSound()
-
-        const currentLine = getCurrentLine(view.state)
-        const lastChar = currentLine.slice(-1)
-        const isPunctuationBefore = /[.!?]/.test(lastChar)
-
-        if (!isPunctuationBefore && currentLine.trim()) {
-          const lastWord = getLastWord(currentLine)
-          if (lastWord) {
-            window.speechSynthesis.cancel()
-            const processedText = lastWord === 'I' ? 'i' : lastWord
-            const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-            window.speechSynthesis.speak(utterance)
-          }
-        }
-        return false // デフォルトのスペース入力を続行
-      },
-    },
-    {
-      key: '.',
-      run: (view) => {
-        // キー音を再生
-        keySoundManager.playKeySound()
-
-        // ピリオド入力前の状態でカーソル位置の行を取得
-        const { from } = view.state.selection.main
-        const line = view.state.doc.lineAt(from)
-        const currentLine = line.text
-
-        if (currentLine.trim()) {
-          window.speechSynthesis.cancel()
-          const processedText = currentLine.trim() + '.'
-          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-          window.speechSynthesis.speak(utterance)
-        }
-        return false
-      },
-    },
-    {
-      key: '?',
-      run: (view) => {
-        // キー音を再生
-        keySoundManager.playKeySound()
-
-        // 疑問符入力前の状態でカーソル位置の行を取得
-        const { from } = view.state.selection.main
-        const line = view.state.doc.lineAt(from)
-        const currentLine = line.text
-
-        if (currentLine.trim()) {
-          window.speechSynthesis.cancel()
-          const processedText = currentLine.trim() + '?'
-          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH_QUESTION)
-          window.speechSynthesis.speak(utterance)
-        }
-        return false
-      },
-    },
-    {
-      key: '!',
-      run: (view) => {
-        // キー音を再生
-        keySoundManager.playKeySound()
-
-        // 感嘆符入力前の状態でカーソル位置の行を取得
-        const { from } = view.state.selection.main
-        const line = view.state.doc.lineAt(from)
-        const currentLine = line.text
-
-        if (currentLine.trim()) {
-          window.speechSynthesis.cancel()
-          const processedText = currentLine.trim() + '!'
-          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-          window.speechSynthesis.speak(utterance)
-        }
-        return false
-      },
-    },
-    {
-      key: 'Backspace',
-      run: () => {
-        // バックスペース音を再生
-        keySoundManager.playDeleteSound()
-        return false // デフォルトの削除動作を続行
-      },
-    },
-  ])
-
-  return keymapExtension
-}
 
 function CodeMirrorEditor({
   value,
@@ -267,6 +129,7 @@ function CodeMirrorEditor({
   className = '',
 }: CodeMirrorEditorProps) {
   const editorViewRef = React.useRef<EditorView | null>(null)
+  const keySound = useKeySound()
 
   // スペルチェック辞書を初期化
   React.useEffect(() => {
@@ -282,27 +145,7 @@ function CodeMirrorEditor({
 
   const extensions = React.useMemo(() => {
     const speechKeymap = createSpeechKeymap(onAutoTranslation)
-
-    // 通常のキー入力に対してキータイプ音を再生
-    const keydownHandler = EditorView.domEventHandlers({
-      keydown: (event) => {
-        const key = event.key
-        // 特殊キー以外の通常の文字入力を検出
-        if (
-          key.length === 1 && // 単一文字
-          !event.ctrlKey && // Ctrlキーが押されていない
-          !event.metaKey && // Cmdキーが押されていない
-          !event.altKey && // Altキーが押されていない
-          key !== ' ' && // スペース以外（スペースは別途処理）
-          key !== '.' && // ピリオド以外（別途処理）
-          key !== '?' && // 疑問符以外（別途処理）
-          key !== '!' // 感嘆符以外（別途処理）
-        ) {
-          keySoundManager.playKeySound()
-        }
-        return false
-      },
-    })
+    const keydownHandler = keySound.createKeydownHandler()
 
     // 選択変更時のイベントハンドラ
     const selectionHandler = EditorView.updateListener.of((update) => {
@@ -348,7 +191,7 @@ function CodeMirrorEditor({
     }
 
     return baseExtensions
-  }, [highlightedLineIndex, disabled, onAutoTranslation, onSelectionChange])
+  }, [highlightedLineIndex, disabled, onAutoTranslation, onSelectionChange, keySound])
 
   // ハイライトされた行が変更された時にスクロール
   React.useEffect(() => {

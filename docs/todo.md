@@ -68,13 +68,23 @@
 
 ## 進捗
 
+### ✅ 完了済み（第1フェーズ）
+
 - [x] リファクタリング計画の策定
-- [ ] useNotebookState の作成
-- [ ] useHighlightState の作成
-- [ ] useNotebookActions の作成
-- [ ] useSelectionHandlers の作成
-- [ ] useSpeechHandlers の作成
-- [ ] NotebookContainer での統合
+- [x] useNotebookState の作成
+- [x] useHighlightState の作成
+- [x] useNotebookActions の作成
+- [x] useSelectionHandlers の作成
+- [x] useSpeechHandlers の作成
+- [x] NotebookContainer での統合
+
+**成果:** NotebookContainer.tsx を426行→285行に削減（約33%削減）
+
+### 🚀 実施中（第2フェーズ）
+
+- [ ] createSpeechKeymap() を独立ファイルに移動
+- [ ] 音声処理ロジックを useSpeech フック化
+- [ ] キーサウンド処理を useKeySound フック化
 
 ---
 
