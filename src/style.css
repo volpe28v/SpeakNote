@@ -85,25 +85,6 @@
   }
 }
 
-/* 日本語テキストエリアのハイライトラッパー */
-.textarea-highlight-wrapper {
-  position: relative;
-  width: 100%;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.textarea-highlight-wrapper textarea {
-  width: 100%;
-  background: transparent;
-  flex: 1;
-}
-
-.japanese-highlight-overlay {
-  pointer-events: none;
-}
-
 /* カーソルの点滅アニメーション */
 @keyframes cursor-blink {
   0%,
