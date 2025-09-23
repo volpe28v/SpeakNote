@@ -29,6 +29,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const [translationText, setTranslationText] = useState('')
   const [originalContent, setOriginalContent] = useState('')
   const [selectedText, setSelectedText] = useState('')
+  const [selectedEnglishText, setSelectedEnglishText] = useState('')
   const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
   const [highlightedJapaneseLineIndex, setHighlightedJapaneseLineIndex] = useState<number | null>(null)
 
@@ -309,11 +310,36 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const handleEnglishSelection = (selectedText: string, lineNumber: number | null) => {
     if (selectedText && englishText.includes(selectedText)) {
       // 英語が選択されたとき、対応する日本語行をハイライト
+      setSelectedEnglishText(selectedText)
       setHighlightedJapaneseLineIndex(lineNumber)
       setHighlightedLineIndex(null) // 英語のハイライトをクリア
     } else {
+      setSelectedEnglishText('')
       setHighlightedJapaneseLineIndex(null)
     }
+  }
+
+  const handleSpeakEnglish = () => {
+    // 1. 英語テキストが選択されている場合
+    if (selectedEnglishText) {
+      speakEnglish(selectedEnglishText)
+      return
+    }
+    
+    // 2. 日本語が選択されて英語がハイライトされている場合
+    if (highlightedLineIndex !== null && highlightedLineIndex >= 0) {
+      const lines = englishText.split('\n')
+      if (highlightedLineIndex < lines.length) {
+        const lineToSpeak = lines[highlightedLineIndex]
+        if (lineToSpeak.trim()) {
+          speakEnglish(lineToSpeak.trim())
+          return
+        }
+      }
+    }
+    
+    // 3. どちらも選択されていない場合は全文を読み上げ
+    speakEnglish(englishText)
   }
 
   const handleSpeakJapanese = () => {
@@ -385,7 +411,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
             <div className="button-group">
               <button
                 id="speak-button"
-                onClick={() => speakEnglish(englishText)}
+                onClick={handleSpeakEnglish}
                 disabled={disabled || !englishText.trim()}
               >
                 Speak
