@@ -455,18 +455,18 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
             </div>
             <div className="button-group">
               <button
+                id="speak-japanese-button"
+                onClick={handleSpeakJapanese}
+                disabled={disabled || !translationText.trim()}
+              >
+                Speak
+              </button>
+              <button
                 id="translate-button"
                 onClick={handleTranslateClick}
                 disabled={disabled || !englishText.trim() || isTranslating}
               >
                 {isTranslating ? 'Translating...' : 'Translate'}
-              </button>
-              <button
-                id="speak-japanese-button"
-                onClick={handleSpeakJapanese}
-                disabled={disabled || !translationText.trim()}
-              >
-                Speak JP
               </button>
             </div>
           </div>
