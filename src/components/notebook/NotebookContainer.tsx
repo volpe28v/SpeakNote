@@ -6,6 +6,9 @@ import { useHighlightState } from '../../hooks/useHighlightState'
 import { useNotebookActions } from '../../hooks/useNotebookActions'
 import { useSelectionHandlers } from '../../hooks/useSelectionHandlers'
 import { useSpeechHandlers } from '../../hooks/useSpeechHandlers'
+import { useNoteSync } from '../../hooks/useNoteSync'
+import { useUnsavedChangeTracker } from '../../hooks/useUnsavedChangeTracker'
+import { useTranslationSync } from '../../hooks/useTranslationSync'
 import CodeMirrorEditor from '../common/CodeMirrorEditor'
 import AutoSaveStatus from '../common/AutoSaveStatus'
 
@@ -121,68 +124,39 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     enabled: !!user,
   })
 
-  // 親コンポーネントから呼び出せるようにresetAutoSaveStatusを設定
-  useEffect(() => {
-    resetAutoSaveStatusRef.current = resetAutoSaveStatus
-  }, [resetAutoSaveStatus, resetAutoSaveStatusRef])
+  // ノート同期処理
+  const handleNoteLoad = (note: { text: string; translations?: string[]; id: number }) => {
+    notebookState.setEnglishText(note.text)
+    notebookState.setOriginalContent(note.text)
+  }
 
-  useEffect(() => {
-    notebookState.setTranslationText(translationLines.join('\n'))
-  }, [translationLines, notebookState])
-
-  // 英語テキストの変更を監視して未保存状態を更新
-  useEffect(() => {
-    const hasChanges = notebookState.englishText.trim() !== notebookState.originalContent.trim()
-    if (hasChanges && notebookState.englishText.trim()) {
-      markAsModified()
-    } else if (!hasChanges) {
-      markAsSaved()
-    }
-  }, [notebookState.englishText, notebookState.originalContent, markAsModified, markAsSaved])
-
-  useEffect(() => {
-    if (user && authManager && firestoreManager) {
-      syncFromFirestore(authManager, firestoreManager, (note) => {
-        notebookState.setEnglishText(note.text)
-        notebookState.setOriginalContent(note.text)
-        if (note.translations) {
-          setTranslationLines(note.translations)
-        }
-        setCurrentEditingId(note.id)
-        markAsSaved()
-      })
-    }
-  }, [
+  useNoteSync({
     user,
     authManager,
     firestoreManager,
     syncFromFirestore,
     setTranslationLines,
+    clearTranslationLines,
     setCurrentEditingId,
     markAsSaved,
-    notebookState,
-  ])
+    onNoteLoad: handleNoteLoad,
+  })
 
-  useEffect(() => {
-    const handleNoteSelected = (event: CustomEvent) => {
-      const note = event.detail
+  // 未保存変更の追跡
+  useUnsavedChangeTracker({
+    englishText: notebookState.englishText,
+    originalContent: notebookState.originalContent,
+    markAsModified,
+    markAsSaved,
+  })
 
-      notebookState.setEnglishText(note.text)
-      notebookState.setOriginalContent(note.text)
-      if (note.translations) {
-        setTranslationLines(note.translations)
-      } else {
-        clearTranslationLines()
-      }
-      setCurrentEditingId(note.id)
-      markAsSaved()
-    }
-
-    window.addEventListener('noteSelected', handleNoteSelected as EventListener)
-    return () => {
-      window.removeEventListener('noteSelected', handleNoteSelected as EventListener)
-    }
-  }, [setTranslationLines, clearTranslationLines, setCurrentEditingId, markAsSaved, notebookState])
+  // 翻訳同期処理
+  useTranslationSync({
+    translationLines,
+    setTranslationText: notebookState.setTranslationText,
+    resetAutoSaveStatusRef,
+    resetAutoSaveStatus,
+  })
 
   const handleKeyDown = async () => {
     // CodeMirrorでは独自のキーマップで処理するため、ここでは何もしない
