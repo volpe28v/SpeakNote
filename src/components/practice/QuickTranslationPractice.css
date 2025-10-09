@@ -210,25 +210,100 @@
   margin: 10px 0;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .quick-translation-modal {
     width: 95%;
-    max-height: 90vh;
+    max-height: 75vh;
+    margin: 0;
+  }
+
+  .quick-translation-header {
+    padding: 10px 15px;
+  }
+
+  .quick-translation-header h2 {
+    font-size: 1.2rem;
+    margin: 0;
   }
 
   .quick-translation-content {
-    padding: 20px;
+    padding: 10px 15px 15px;
+  }
+
+  .practice-description {
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+    line-height: 1.4;
   }
 
   .settings {
-    gap: 15px;
+    gap: 10px;
+    margin: 15px 0;
+  }
+
+  .setting-item {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .setting-item label {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .setting-item select {
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    min-width: 80px;
+  }
+
+  .start-button, .stop-button {
+    padding: 8px 20px;
+    font-size: 0.9rem;
+    margin-top: 10px;
+  }
+
+  .progress-info {
+    padding: 6px;
+    font-size: 0.75rem;
+    margin-bottom: 10px;
+  }
+
+  .current-practice {
+    gap: 5px;
+    margin: 5px 0;
+  }
+
+  .practice-phase {
+    padding: 5px 8px;
+  }
+
+  .practice-phase h3 {
+    font-size: 0.75rem;
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   .practice-text {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .thinking-phase {
+    padding: 8px;
   }
 
   .countdown {
-    font-size: 2.5rem;
+    font-size: 1.8rem;
+    margin-top: 5px;
+  }
+
+  .repeat-count {
+    font-size: 0.75rem;
+    margin-top: 5px;
   }
 }
