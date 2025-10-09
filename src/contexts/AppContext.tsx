@@ -4,6 +4,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import { useNotes } from '../hooks/useNotes'
 import { useInput } from '../hooks/useInput'
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges'
+import { useQuickTranslation } from '../hooks/useQuickTranslation'
 
 interface AppContextType {
   auth: ReturnType<typeof useAuth>
@@ -11,6 +12,7 @@ interface AppContextType {
   notes: ReturnType<typeof useNotes>
   input: ReturnType<typeof useInput>
   unsavedChanges: ReturnType<typeof useUnsavedChanges>
+  quickTranslation: ReturnType<typeof useQuickTranslation>
 }
 
 const AppContext = createContext<AppContextType | null>(null)
@@ -21,9 +23,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const notes = useNotes()
   const input = useInput()
   const unsavedChanges = useUnsavedChanges()
+  const quickTranslation = useQuickTranslation()
 
   return (
-    <AppContext.Provider value={{ auth, translation, notes, input, unsavedChanges }}>
+    <AppContext.Provider value={{ auth, translation, notes, input, unsavedChanges, quickTranslation }}>
       {children}
     </AppContext.Provider>
   )

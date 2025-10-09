@@ -805,6 +805,14 @@ h1 {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
+.practice-action {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+}
+
+.practice-action:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #f44336 100%);
+}
+
 .delete-action:hover {
   background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
 }

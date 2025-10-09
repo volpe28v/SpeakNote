@@ -3,13 +3,15 @@ import { useApp } from '../../contexts/AppContext'
 import { speakMultipleLines } from '../../lib/speech'
 import { toast } from '../../lib/toast'
 import type { Note } from '../../types'
+import QuickTranslationPractice from '../practice/QuickTranslationPractice'
 
 function NotesList() {
-  const { auth, translation, notes, unsavedChanges } = useApp()
+  const { auth, translation, notes, unsavedChanges, quickTranslation } = useApp()
   const { user, authManager, firestoreManager } = auth
   const { setTranslationLines } = translation
   const { notes: notesList, currentEditingId, deleteNote, setCurrentEditingId } = notes
   const { hasUnsavedChanges } = unsavedChanges
+  const { isPracticing, practiceNote, startPractice, stopPractice } = quickTranslation
 
   // NotebookContainerで既に同期されるため、こちらでは個別の同期処理は不要
 
@@ -53,6 +55,11 @@ function NotesList() {
     speakMultipleLines(noteText)
   }
 
+  const handleStartPractice = (note: Note, event: React.MouseEvent) => {
+    event.stopPropagation()
+    startPractice(note)
+  }
+
   if (!user) {
     return (
       <div id="saved-sentences-container" className="disabled-overlay">
@@ -64,6 +71,7 @@ function NotesList() {
   }
 
   return (
+    <>
     <div id="saved-sentences-container">
       <div id="saved-sentences-list">
         {notesList.length === 0 ? (
@@ -90,12 +98,23 @@ function NotesList() {
                 <button
                   className="action-button speak-action"
                   onClick={(e) => handleSpeak(note.text, e)}
+                  title="再生"
                 >
                   ▶️
                 </button>
+                {note.translations && note.translations.length > 0 && (
+                  <button
+                    className="action-button practice-action"
+                    onClick={(e) => handleStartPractice(note, e)}
+                    title="瞬間英作"
+                  >
+                    🎯
+                  </button>
+                )}
                 <button
                   className="action-button delete-action"
                   onClick={(e) => handleDelete(note.id, e)}
+                  title="削除"
                 >
                   ❌
                 </button>
@@ -105,6 +124,10 @@ function NotesList() {
         )}
       </div>
     </div>
+    {isPracticing && practiceNote && (
+      <QuickTranslationPractice note={practiceNote} onClose={stopPractice} />
+    )}
+    </>
   )
 }
 
