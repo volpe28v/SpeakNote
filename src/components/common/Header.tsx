@@ -8,7 +8,7 @@ function Header() {
     <div className="header">
       <h1>SpeakNote</h1>
       <div className="header-right">
-        <span className="version">ver1.2.4</span>
+        <span className="version">ver1.3.0</span>
         <div id="auth-container">
           {user ? (
             <div id="user-info" className="user-info">
