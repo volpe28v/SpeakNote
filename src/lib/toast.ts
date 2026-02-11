@@ -56,3 +56,17 @@ class ToastManager {
 }
 
 export const toast = new ToastManager()
+
+// 遅延実行トーストユーティリティ（CodeMirrorのフォーカス問題回避用）
+const DEFERRED_DELAY = 100
+
+export const deferredToast = {
+  success: (message: string, duration?: number) =>
+    setTimeout(() => toast.success(message, duration), DEFERRED_DELAY),
+  error: (message: string, duration?: number) =>
+    setTimeout(() => toast.error(message, duration), DEFERRED_DELAY),
+  info: (message: string, duration?: number) =>
+    setTimeout(() => toast.info(message, duration), DEFERRED_DELAY),
+  warning: (message: string, duration?: number) =>
+    setTimeout(() => toast.warning(message, duration), DEFERRED_DELAY),
+}

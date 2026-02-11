@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { keySoundManager } from '../lib/keySound'
+import { keySoundManager } from '@/lib/keySound'
 import { EditorView } from '@codemirror/view'
 
 export function useKeySound() {

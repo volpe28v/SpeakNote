@@ -22,9 +22,9 @@ import {
   serverTimestamp,
   type Firestore,
 } from 'firebase/firestore'
-import { firebaseConfig } from './firebase-config'
+import { firebaseConfig } from '@/lib/firebase-config'
 import type { Note } from '@/types'
-import { toast } from './toast'
+import { toast } from '@/lib/toast'
 
 // Firebase初期化
 const app = initializeApp(firebaseConfig)

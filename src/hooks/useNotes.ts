@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
-import { toast } from '../lib/toast'
-import { AuthManager, FirestoreManager } from '../lib/firebase'
-import type { Note, SaveResult } from '../types'
+import { deferredToast } from '@/lib/toast'
+import { AuthManager, FirestoreManager } from '@/lib/firebase'
+import type { Note, SaveResult } from '@/types'
 
 interface UseNotesReturn {
   notes: Note[]
@@ -49,7 +49,7 @@ export function useNotes(): UseNotesReturn {
       const cleanTranslations = translations || []
 
       if (!firestoreManager || !authManager.getCurrentUser()) {
-        setTimeout(() => toast.error('Please login to save notes'), 100)
+        deferredToast.error('Please login to save notes')
         return false
       }
 
@@ -76,7 +76,7 @@ export function useNotes(): UseNotesReturn {
         }
       } catch (error) {
         console.error('Firestore save error:', error)
-        setTimeout(() => toast.error('Save failed. Please try again.'), 100)
+        deferredToast.error('Save failed. Please try again.')
         return false
       } finally {
         setIsSaving(false)
@@ -92,7 +92,7 @@ export function useNotes(): UseNotesReturn {
       firestoreManager: FirestoreManager
     ): Promise<void> => {
       if (!firestoreManager || !authManager.getCurrentUser()) {
-        setTimeout(() => toast.error('Please login to delete notes'), 100)
+        deferredToast.error('Please login to delete notes')
         return
       }
 
@@ -101,7 +101,7 @@ export function useNotes(): UseNotesReturn {
         setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id))
       } catch (error) {
         console.error('Firestore delete error:', error)
-        setTimeout(() => toast.error('Delete failed. Please try again.'), 100)
+        deferredToast.error('Delete failed. Please try again.')
       }
     },
     []
@@ -138,15 +138,11 @@ export function useNotes(): UseNotesReturn {
             onLatestNoteAutoLoad(latestNote)
           }
           setHasAutoLoadedLatestNote(true)
-          setTimeout(() => {
-            toast.info('Latest note loaded automatically')
-          }, 100)
+          deferredToast.info('Latest note loaded automatically')
         }
       } catch (error) {
         console.error('Firestore sync error:', error)
-        setTimeout(() => {
-          toast.error('Failed to sync from cloud')
-        }, 100)
+        deferredToast.error('Failed to sync from cloud')
       }
     },
     [currentEditingId, hasAutoLoadedLatestNote]

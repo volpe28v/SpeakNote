@@ -1,7 +1,8 @@
-import { keymap } from '@codemirror/view'
+import { keymap, EditorView } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
-import { speakEnglish, createUtterance, SPEECH_CONFIG } from './speech'
-import { keySoundManager } from './keySound'
+import { speakEnglish, createUtterance, SPEECH_CONFIG } from '@/lib/speech'
+import { keySoundManager } from '@/lib/keySound'
+import type { SpeechConfig } from '@/types'
 
 const getCurrentLine = (state: EditorState): string => {
   const { from } = state.selection.main
@@ -12,6 +13,19 @@ const getCurrentLine = (state: EditorState): string => {
 const getLastWord = (text: string): string => {
   const words = text.trim().split(/\s+/)
   return words[words.length - 1] || ''
+}
+
+const speakCurrentLine = (view: EditorView, suffix: string, config: SpeechConfig): void => {
+  const { from } = view.state.selection.main
+  const line = view.state.doc.lineAt(from)
+  const currentLine = line.text
+
+  if (currentLine.trim()) {
+    window.speechSynthesis.cancel()
+    const processedText = currentLine.trim() + suffix
+    const utterance = createUtterance(processedText, config)
+    window.speechSynthesis.speak(utterance)
+  }
 }
 
 export const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
@@ -72,60 +86,24 @@ export const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
     {
       key: '.',
       run: (view) => {
-        // キー音を再生
         keySoundManager.playKeySound()
-
-        // ピリオド入力前の状態でカーソル位置の行を取得
-        const { from } = view.state.selection.main
-        const line = view.state.doc.lineAt(from)
-        const currentLine = line.text
-
-        if (currentLine.trim()) {
-          window.speechSynthesis.cancel()
-          const processedText = currentLine.trim() + '.'
-          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-          window.speechSynthesis.speak(utterance)
-        }
+        speakCurrentLine(view, '.', SPEECH_CONFIG.ENGLISH)
         return false
       },
     },
     {
       key: '?',
       run: (view) => {
-        // キー音を再生
         keySoundManager.playKeySound()
-
-        // 疑問符入力前の状態でカーソル位置の行を取得
-        const { from } = view.state.selection.main
-        const line = view.state.doc.lineAt(from)
-        const currentLine = line.text
-
-        if (currentLine.trim()) {
-          window.speechSynthesis.cancel()
-          const processedText = currentLine.trim() + '?'
-          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH_QUESTION)
-          window.speechSynthesis.speak(utterance)
-        }
+        speakCurrentLine(view, '?', SPEECH_CONFIG.ENGLISH_QUESTION)
         return false
       },
     },
     {
       key: '!',
       run: (view) => {
-        // キー音を再生
         keySoundManager.playKeySound()
-
-        // 感嘆符入力前の状態でカーソル位置の行を取得
-        const { from } = view.state.selection.main
-        const line = view.state.doc.lineAt(from)
-        const currentLine = line.text
-
-        if (currentLine.trim()) {
-          window.speechSynthesis.cancel()
-          const processedText = currentLine.trim() + '!'
-          const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-          window.speechSynthesis.speak(utterance)
-        }
+        speakCurrentLine(view, '!', SPEECH_CONFIG.ENGLISH)
         return false
       },
     },

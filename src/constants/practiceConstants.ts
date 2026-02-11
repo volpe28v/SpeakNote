@@ -8,21 +8,6 @@ export const PRACTICE_TIMEOUTS = {
   REACT_STRICT_DELAY: 50, // React StrictMode対策
 } as const
 
-export const SPEECH_CONFIG = {
-  JAPANESE: {
-    lang: 'ja-JP',
-    rate: 1.0,
-    pitch: 1.0,
-    volume: 1.0,
-  },
-  ENGLISH: {
-    lang: 'en-GB',
-    rate: 1.0,
-    pitch: 1.0,
-    volume: 1.0,
-  },
-} as const
-
 export const THINKING_TIME_OPTIONS = [
   { value: 3, label: '3秒' },
   { value: 5, label: '5秒' },

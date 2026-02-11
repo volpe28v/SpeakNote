@@ -1,5 +1,5 @@
 // アプリケーション設定値と定数
-import type { UIStrings } from '../types'
+import type { UIStrings } from '@/types'
 
 // アプリケーションのバージョン
 export const APP_VERSION = '1.3.0'

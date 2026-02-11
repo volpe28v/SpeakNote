@@ -1,9 +1,9 @@
 import React from 'react'
-import { useApp } from '../../contexts/AppContext'
-import { speakMultipleLines } from '../../lib/speech'
-import { toast } from '../../lib/toast'
-import type { Note } from '../../types'
-import QuickTranslationPractice from '../practice/QuickTranslationPractice'
+import { useApp } from '@/contexts/AppContext'
+import { speakMultipleLines } from '@/lib/speech'
+import { deferredToast } from '@/lib/toast'
+import type { Note } from '@/types'
+import QuickTranslationPractice from '@/components/practice/QuickTranslationPractice'
 
 function NotesList() {
   const { auth, translation, notes, unsavedChanges, quickTranslation } = useApp()
@@ -39,13 +39,13 @@ function NotesList() {
     event.stopPropagation()
 
     if (!authManager || !firestoreManager) {
-      setTimeout(() => toast.error('Please login to delete notes'), 100)
+      deferredToast.error('Please login to delete notes')
       return
     }
 
     if (confirm('Delete this note?')) {
       await deleteNote(noteId, authManager, firestoreManager)
-      setTimeout(() => toast.success('Note deleted'), 100)
+      deferredToast.success('Note deleted')
       // deleteNote内でnotes状態が自動更新されるため、再同期は不要
     }
   }
@@ -72,61 +72,61 @@ function NotesList() {
 
   return (
     <>
-    <div id="saved-sentences-container">
-      <div id="saved-sentences-list">
-        {notesList.length === 0 ? (
-          <div className="no-notes">No notes available</div>
-        ) : (
-          notesList.map((note) => (
-            <div
-              key={note.id}
-              className={`saved-sentence-item ${currentEditingId === note.id ? 'editing' : ''}`}
-              onClick={() => handleNoteClick(note)}
-            >
-              <div className="sentence-content">
-                <div className="sentence-english">{note.text.replace(/\n/g, ' ')}</div>
-                {note.translations && note.translations.length > 0 && (
-                  <div className="sentence-japanese">
-                    {note.translations
-                      .join(' ')
-                      .replace(/\s{2,}/g, ' ')
-                      .trim()}
-                  </div>
-                )}
-              </div>
-              <div className="sentence-buttons">
-                <button
-                  className="action-button speak-action"
-                  onClick={(e) => handleSpeak(note.text, e)}
-                  title="再生"
-                >
-                  ▶️
-                </button>
-                {note.translations && note.translations.length > 0 && (
+      <div id="saved-sentences-container">
+        <div id="saved-sentences-list">
+          {notesList.length === 0 ? (
+            <div className="no-notes">No notes available</div>
+          ) : (
+            notesList.map((note) => (
+              <div
+                key={note.id}
+                className={`saved-sentence-item ${currentEditingId === note.id ? 'editing' : ''}`}
+                onClick={() => handleNoteClick(note)}
+              >
+                <div className="sentence-content">
+                  <div className="sentence-english">{note.text.replace(/\n/g, ' ')}</div>
+                  {note.translations && note.translations.length > 0 && (
+                    <div className="sentence-japanese">
+                      {note.translations
+                        .join(' ')
+                        .replace(/\s{2,}/g, ' ')
+                        .trim()}
+                    </div>
+                  )}
+                </div>
+                <div className="sentence-buttons">
                   <button
-                    className="action-button practice-action"
-                    onClick={(e) => handleStartPractice(note, e)}
-                    title="瞬間英作"
+                    className="action-button speak-action"
+                    onClick={(e) => handleSpeak(note.text, e)}
+                    title="再生"
                   >
-                    🎯
+                    ▶️
                   </button>
-                )}
-                <button
-                  className="action-button delete-action"
-                  onClick={(e) => handleDelete(note.id, e)}
-                  title="削除"
-                >
-                  ❌
-                </button>
+                  {note.translations && note.translations.length > 0 && (
+                    <button
+                      className="action-button practice-action"
+                      onClick={(e) => handleStartPractice(note, e)}
+                      title="瞬間英作"
+                    >
+                      🎯
+                    </button>
+                  )}
+                  <button
+                    className="action-button delete-action"
+                    onClick={(e) => handleDelete(note.id, e)}
+                    title="削除"
+                  >
+                    ❌
+                  </button>
+                </div>
               </div>
-            </div>
-          ))
-        )}
+            ))
+          )}
+        </div>
       </div>
-    </div>
-    {isPracticing && practiceNote && (
-      <QuickTranslationPractice note={practiceNote} onClose={stopPractice} />
-    )}
+      {isPracticing && practiceNote && (
+        <QuickTranslationPractice note={practiceNote} onClose={stopPractice} />
+      )}
     </>
   )
 }

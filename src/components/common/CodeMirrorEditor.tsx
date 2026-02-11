@@ -2,10 +2,10 @@ import React from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { EditorView, Decoration } from '@codemirror/view'
 import { EditorState, Extension } from '@codemirror/state'
-import { speakEnglish } from '../../lib/speech'
-import { spellCheckField, initSpellCheck, setUpdateCallback } from '../../lib/spellcheck'
-import { createSpeechKeymap } from '../../lib/codeMirrorKeymap'
-import { useKeySound } from '../../hooks/useKeySound'
+import { speakEnglish } from '@/lib/speech'
+import { spellCheckField, initSpellCheck, setUpdateCallback } from '@/lib/spellcheck'
+import { createSpeechKeymap } from '@/lib/codeMirrorKeymap'
+import { useKeySound } from '@/hooks/useKeySound'
 
 interface CodeMirrorEditorProps {
   value: string
@@ -115,7 +115,6 @@ const noteTheme = EditorView.theme({
     display: 'none',
   },
 })
-
 
 function CodeMirrorEditor({
   value,

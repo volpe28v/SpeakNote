@@ -1,4 +1,59 @@
 // キータイプ音の管理
+
+interface SoundParams {
+  mainFreqStart: number
+  mainFreqEnd: number
+  mainFreqRamp: number
+  mainGain: number
+  mainDuration: number
+  subFreq: number
+  subGain: number
+  subDuration: number
+}
+
+const SOUND_PARAMS: Record<string, SoundParams> = {
+  key: {
+    mainFreqStart: 4000,
+    mainFreqEnd: 1000,
+    mainFreqRamp: 0.005,
+    mainGain: 0.15,
+    mainDuration: 0.015,
+    subFreq: 200,
+    subGain: 0.05,
+    subDuration: 0.01,
+  },
+  space: {
+    mainFreqStart: 3000,
+    mainFreqEnd: 800,
+    mainFreqRamp: 0.006,
+    mainGain: 0.12,
+    mainDuration: 0.018,
+    subFreq: 150,
+    subGain: 0.07,
+    subDuration: 0.012,
+  },
+  enter: {
+    mainFreqStart: 3500,
+    mainFreqEnd: 700,
+    mainFreqRamp: 0.008,
+    mainGain: 0.18,
+    mainDuration: 0.025,
+    subFreq: 120,
+    subGain: 0.08,
+    subDuration: 0.02,
+  },
+  delete: {
+    mainFreqStart: 2500,
+    mainFreqEnd: 1500,
+    mainFreqRamp: 0.004,
+    mainGain: 0.1,
+    mainDuration: 0.012,
+    subFreq: 250,
+    subGain: 0.04,
+    subDuration: 0.008,
+  },
+}
+
 class KeySoundManager {
   private audioContext: AudioContext | null = null
   private enabled: boolean = true
@@ -20,8 +75,7 @@ class KeySoundManager {
     }
   }
 
-  // キータイプ音を再生（短いクリック音）
-  public playKeySound() {
+  private playSound(params: SoundParams) {
     if (!this.enabled) return
 
     try {
@@ -37,17 +91,18 @@ class KeySoundManager {
       oscillator.connect(gainNode)
       gainNode.connect(this.audioContext.destination)
 
-      // 高音の短いクリック音（カシャという音）
       oscillator.type = 'square'
-      oscillator.frequency.setValueAtTime(4000, currentTime)
-      oscillator.frequency.exponentialRampToValueAtTime(1000, currentTime + 0.005)
+      oscillator.frequency.setValueAtTime(params.mainFreqStart, currentTime)
+      oscillator.frequency.exponentialRampToValueAtTime(
+        params.mainFreqEnd,
+        currentTime + params.mainFreqRamp
+      )
 
-      // 音量の設定（短く鋭い音）
-      gainNode.gain.setValueAtTime(this.volume * 0.15, currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.015)
+      gainNode.gain.setValueAtTime(this.volume * params.mainGain, currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + params.mainDuration)
 
       oscillator.start(currentTime)
-      oscillator.stop(currentTime + 0.015)
+      oscillator.stop(currentTime + params.mainDuration)
 
       // 追加の低音成分
       const oscillator2 = this.audioContext.createOscillator()
@@ -57,157 +112,32 @@ class KeySoundManager {
       gainNode2.connect(this.audioContext.destination)
 
       oscillator2.type = 'sine'
-      oscillator2.frequency.setValueAtTime(200, currentTime)
+      oscillator2.frequency.setValueAtTime(params.subFreq, currentTime)
 
-      gainNode2.gain.setValueAtTime(this.volume * 0.05, currentTime)
-      gainNode2.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.01)
+      gainNode2.gain.setValueAtTime(this.volume * params.subGain, currentTime)
+      gainNode2.gain.exponentialRampToValueAtTime(0.001, currentTime + params.subDuration)
 
       oscillator2.start(currentTime)
-      oscillator2.stop(currentTime + 0.01)
+      oscillator2.stop(currentTime + params.subDuration)
     } catch (error) {
-      console.error('Failed to play key sound:', error)
+      console.error('Failed to play sound:', error)
     }
   }
 
-  // スペースキー用の少し低い音
+  public playKeySound() {
+    this.playSound(SOUND_PARAMS.key)
+  }
+
   public playSpaceSound() {
-    if (!this.enabled) return
-
-    try {
-      this.initAudioContext()
-      if (!this.audioContext) return
-
-      const currentTime = this.audioContext.currentTime
-
-      // メインのクリック音（スペース用に少し低めの音）
-      const oscillator = this.audioContext.createOscillator()
-      const gainNode = this.audioContext.createGain()
-
-      oscillator.connect(gainNode)
-      gainNode.connect(this.audioContext.destination)
-
-      oscillator.type = 'square'
-      oscillator.frequency.setValueAtTime(3000, currentTime)
-      oscillator.frequency.exponentialRampToValueAtTime(800, currentTime + 0.006)
-
-      gainNode.gain.setValueAtTime(this.volume * 0.12, currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.018)
-
-      oscillator.start(currentTime)
-      oscillator.stop(currentTime + 0.018)
-
-      // 追加の低音成分（より強め）
-      const oscillator2 = this.audioContext.createOscillator()
-      const gainNode2 = this.audioContext.createGain()
-
-      oscillator2.connect(gainNode2)
-      gainNode2.connect(this.audioContext.destination)
-
-      oscillator2.type = 'sine'
-      oscillator2.frequency.setValueAtTime(150, currentTime)
-
-      gainNode2.gain.setValueAtTime(this.volume * 0.07, currentTime)
-      gainNode2.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.012)
-
-      oscillator2.start(currentTime)
-      oscillator2.stop(currentTime + 0.012)
-    } catch (error) {
-      console.error('Failed to play space sound:', error)
-    }
+    this.playSound(SOUND_PARAMS.space)
   }
 
-  // Enter/改行用の音
   public playEnterSound() {
-    if (!this.enabled) return
-
-    try {
-      this.initAudioContext()
-      if (!this.audioContext) return
-
-      const currentTime = this.audioContext.currentTime
-
-      // メインのクリック音（Enter用により強い音）
-      const oscillator = this.audioContext.createOscillator()
-      const gainNode = this.audioContext.createGain()
-
-      oscillator.connect(gainNode)
-      gainNode.connect(this.audioContext.destination)
-
-      oscillator.type = 'square'
-      oscillator.frequency.setValueAtTime(3500, currentTime)
-      oscillator.frequency.exponentialRampToValueAtTime(700, currentTime + 0.008)
-
-      gainNode.gain.setValueAtTime(this.volume * 0.18, currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.025)
-
-      oscillator.start(currentTime)
-      oscillator.stop(currentTime + 0.025)
-
-      // 追加の低音成分（より強く長め）
-      const oscillator2 = this.audioContext.createOscillator()
-      const gainNode2 = this.audioContext.createGain()
-
-      oscillator2.connect(gainNode2)
-      gainNode2.connect(this.audioContext.destination)
-
-      oscillator2.type = 'sine'
-      oscillator2.frequency.setValueAtTime(120, currentTime)
-
-      gainNode2.gain.setValueAtTime(this.volume * 0.08, currentTime)
-      gainNode2.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.02)
-
-      oscillator2.start(currentTime)
-      oscillator2.stop(currentTime + 0.02)
-    } catch (error) {
-      console.error('Failed to play enter sound:', error)
-    }
+    this.playSound(SOUND_PARAMS.enter)
   }
 
-  // バックスペース/削除用の音
   public playDeleteSound() {
-    if (!this.enabled) return
-
-    try {
-      this.initAudioContext()
-      if (!this.audioContext) return
-
-      const currentTime = this.audioContext.currentTime
-
-      // メインのクリック音（削除用により短く軽い音）
-      const oscillator = this.audioContext.createOscillator()
-      const gainNode = this.audioContext.createGain()
-
-      oscillator.connect(gainNode)
-      gainNode.connect(this.audioContext.destination)
-
-      oscillator.type = 'square'
-      oscillator.frequency.setValueAtTime(2500, currentTime)
-      oscillator.frequency.exponentialRampToValueAtTime(1500, currentTime + 0.004)
-
-      gainNode.gain.setValueAtTime(this.volume * 0.1, currentTime)
-      gainNode.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.012)
-
-      oscillator.start(currentTime)
-      oscillator.stop(currentTime + 0.012)
-
-      // 追加の低音成分（削除音用に軽め）
-      const oscillator2 = this.audioContext.createOscillator()
-      const gainNode2 = this.audioContext.createGain()
-
-      oscillator2.connect(gainNode2)
-      gainNode2.connect(this.audioContext.destination)
-
-      oscillator2.type = 'sine'
-      oscillator2.frequency.setValueAtTime(250, currentTime)
-
-      gainNode2.gain.setValueAtTime(this.volume * 0.04, currentTime)
-      gainNode2.gain.exponentialRampToValueAtTime(0.001, currentTime + 0.008)
-
-      oscillator2.start(currentTime)
-      oscillator2.stop(currentTime + 0.008)
-    } catch (error) {
-      console.error('Failed to play delete sound:', error)
-    }
+    this.playSound(SOUND_PARAMS.delete)
   }
 
   // 設定の取得と更新

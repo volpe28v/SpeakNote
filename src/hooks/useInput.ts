@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { speakEnglish, createUtterance, SPEECH_CONFIG } from '../lib/speech'
+import { speakEnglish, createUtterance, SPEECH_CONFIG } from '@/lib/speech'
 
 interface UseInputReturn {
   handleKeyboardEvent: (

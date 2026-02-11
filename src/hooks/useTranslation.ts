@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import { toast } from '../lib/toast'
-import { GAS_TRANSLATE_URL, UI_STRINGS } from '../config/constants'
+import { deferredToast } from '@/lib/toast'
+import { GAS_TRANSLATE_URL, UI_STRINGS } from '@/constants/appConstants'
 
 interface UseTranslationReturn {
   translationLines: string[]
@@ -28,10 +28,7 @@ export function useTranslation(): UseTranslationReturn {
         `Text length (${text.length} characters) exceeds 25000 characters - approaching maximum limit`
       )
       // 上限（30000文字）に近づいているため警告を表示
-      setTimeout(
-        () => toast.warning('Text exceeds 25000 characters. Translation may fail (max: 30000).'),
-        100
-      )
+      deferredToast.warning('Text exceeds 25000 characters. Translation may fail (max: 30000).')
     }
 
     try {
@@ -69,7 +66,7 @@ export function useTranslation(): UseTranslationReturn {
   const translate = useCallback(
     async (text: string): Promise<string | null> => {
       if (!text.trim()) {
-        setTimeout(() => toast.info('Please enter English text'), 100)
+        deferredToast.info('Please enter English text')
         return null
       }
 
@@ -78,7 +75,7 @@ export function useTranslation(): UseTranslationReturn {
       }
 
       if (!GAS_TRANSLATE_URL) {
-        setTimeout(() => toast.warning(UI_STRINGS.API_NOT_SET), 100)
+        deferredToast.warning(UI_STRINGS.API_NOT_SET)
         return null
       }
 
@@ -86,7 +83,7 @@ export function useTranslation(): UseTranslationReturn {
         return await translateWithGoogleAPI(text)
       } catch (error) {
         console.error('Translation error:', error)
-        setTimeout(() => toast.error(UI_STRINGS.TRANSLATION_ERROR), 100)
+        deferredToast.error(UI_STRINGS.TRANSLATION_ERROR)
         return null
       }
     },
@@ -96,7 +93,7 @@ export function useTranslation(): UseTranslationReturn {
   const handleTranslate = useCallback(
     async (englishText: string): Promise<void> => {
       if (!englishText.trim()) {
-        setTimeout(() => toast.info('Please enter English text'), 100)
+        deferredToast.info('Please enter English text')
         return
       }
 
@@ -105,7 +102,7 @@ export function useTranslation(): UseTranslationReturn {
       }
 
       if (!GAS_TRANSLATE_URL) {
-        setTimeout(() => toast.warning(UI_STRINGS.API_NOT_SET), 100)
+        deferredToast.warning(UI_STRINGS.API_NOT_SET)
         return
       }
 
@@ -115,10 +112,10 @@ export function useTranslation(): UseTranslationReturn {
         const translatedText = await translateWithGoogleAPI(englishText)
         const lines = translatedText.split('\n')
         setTranslationLinesState(lines)
-        setTimeout(() => toast.success('Translation completed'), 100)
+        deferredToast.success('Translation completed')
       } catch (error) {
         console.error('Translation error:', error)
-        setTimeout(() => toast.error(UI_STRINGS.TRANSLATION_ERROR), 100)
+        deferredToast.error(UI_STRINGS.TRANSLATION_ERROR)
       } finally {
         setIsTranslating(false)
       }

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import type { AuthManager, FirestoreManager } from '../lib/firebase'
-import type { Note } from '../types'
+import type { AuthManager, FirestoreManager } from '@/lib/firebase'
+import type { Note } from '@/types'
 
 interface UseNoteSyncProps {
   user: { photoURL?: string | null; displayName?: string | null } | null

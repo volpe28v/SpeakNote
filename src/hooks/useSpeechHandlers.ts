@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { speakEnglish, speakJapanese } from '../lib/speech'
+import { speakEnglish, speakJapanese } from '@/lib/speech'
 
 interface UseSpeechHandlersProps {
   englishText: string

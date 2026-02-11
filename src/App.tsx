@@ -1,11 +1,11 @@
 import './style.css'
 import { useState, useEffect, useRef } from 'react'
-import { AppProvider } from './contexts/AppContext'
-import Header from './components/common/Header'
-import NotebookContainer from './components/notebook/NotebookContainer'
-import NotesList from './components/notes/NotesList'
-import LoginModal from './components/common/LoginModal'
-import Toast from './components/common/Toast'
+import { AppProvider } from '@/contexts/AppContext'
+import Header from '@/components/common/Header'
+import NotebookContainer from '@/components/notebook/NotebookContainer'
+import NotesList from '@/components/notes/NotesList'
+import LoginModal from '@/components/common/LoginModal'
+import Toast from '@/components/common/Toast'
 
 function App() {
   const [activeTab, setActiveTab] = useState('notebook')

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { toast } from '../lib/toast'
-import { AuthManager, FirestoreManager } from '../lib/firebase'
+import { toast } from '@/lib/toast'
+import { AuthManager, FirestoreManager } from '@/lib/firebase'
 
 interface User {
   photoURL?: string | null

@@ -1,5 +1,8 @@
 // 音声合成関連の機能
 import type { SpeechConfig } from '@/types'
+import { removeEmojis } from '@/utils/textUtils'
+
+export type SpeechLanguage = 'japanese' | 'english'
 
 // 音声合成の設定定数
 export const SPEECH_CONFIG: Record<string, SpeechConfig> = {
@@ -142,4 +145,32 @@ export function speakJapanese(text: string): void {
   // 発音実行
   const utterance = createUtterance(text, SPEECH_CONFIG.JAPANESE)
   window.speechSynthesis.speak(utterance)
+}
+
+// 言語指定でテキストを読み上げる汎用関数（絵文字除去付き）
+export function speakText(
+  text: string,
+  language: SpeechLanguage,
+  onEnd?: () => void,
+  onError?: () => void
+): void {
+  window.speechSynthesis.cancel()
+
+  const cleanText = removeEmojis(text)
+  const config = language === 'japanese' ? SPEECH_CONFIG.JAPANESE : SPEECH_CONFIG.ENGLISH
+  const utterance = createUtterance(cleanText, config)
+
+  if (onEnd) {
+    utterance.onend = onEnd
+  }
+  if (onError) {
+    utterance.onerror = onError
+  }
+
+  window.speechSynthesis.speak(utterance)
+}
+
+// 音声を停止する関数
+export function stopSpeech(): void {
+  window.speechSynthesis.cancel()
 }

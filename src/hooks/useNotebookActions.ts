@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
-import { toast } from '../lib/toast'
-import type { AuthManager, FirestoreManager } from '../lib/firebase'
-import type { Note } from '../types'
+import { deferredToast } from '@/lib/toast'
+import type { AuthManager, FirestoreManager } from '@/lib/firebase'
+import type { Note } from '@/types'
 
 type SaveResult = {
   type: 'saved' | 'updated'
@@ -58,17 +58,17 @@ export function useNotebookActions({
 }: UseNotebookActionsProps) {
   const handleSave = useCallback(async () => {
     if (!authManager || !firestoreManager) {
-      setTimeout(() => toast.error('Please login to save notes'), 100)
+      deferredToast.error('Please login to save notes')
       return
     }
 
     const result = await saveNote(englishText, translationLines, authManager, firestoreManager)
     if (result) {
       if (result.type === 'saved' && result.id) {
-        setTimeout(() => toast.success('Note saved successfully!'), 100)
+        deferredToast.success('Note saved successfully!')
         setCurrentEditingId(result.id)
       } else if (result.type === 'updated') {
-        setTimeout(() => toast.success('Note updated successfully!'), 100)
+        deferredToast.success('Note updated successfully!')
       }
       // 保存後は元のコンテンツを更新して未保存状態をリセット
       setOriginalContent(englishText.trim())

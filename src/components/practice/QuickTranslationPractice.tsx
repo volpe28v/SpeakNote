@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
-import type { Note } from '../../types'
+import type { Note } from '@/types'
 import {
   PRACTICE_TIMEOUTS,
   THINKING_TIME_OPTIONS,
   REPEAT_COUNT_OPTIONS,
   INFINITE_THINKING_TIME,
-} from '../../constants/practiceConstants'
-import { extractValidPairs } from '../../utils/textUtils'
-import { speakText, stopSpeech } from '../../utils/speechUtils'
+} from '@/constants/practiceConstants'
+import { extractValidPairs } from '@/utils/textUtils'
+import { speakText, stopSpeech } from '@/lib/speech'
 import './QuickTranslationPractice.css'
 
 interface QuickTranslationPracticeProps {
@@ -18,7 +18,9 @@ interface QuickTranslationPracticeProps {
 const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ note, onClose }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [currentPhase, setCurrentPhase] = useState<'idle' | 'japanese' | 'thinking' | 'english' | 'pause'>('idle')
+  const [currentPhase, setCurrentPhase] = useState<
+    'idle' | 'japanese' | 'thinking' | 'english' | 'pause'
+  >('idle')
   const [thinkingTime, setThinkingTime] = useState(5) // 秒
   const [englishRepeatCount, setEnglishRepeatCount] = useState(2)
   const [timeRemaining, setTimeRemaining] = useState(0)
@@ -240,7 +242,7 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     event.preventDefault()
-    
+
     if (event.key === 'Escape') {
       handleStop()
     } else if (currentPhase === 'thinking' && thinkingTime === INFINITE_THINKING_TIME) {
@@ -256,7 +258,9 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
         <div className="quick-translation-modal">
           <div className="quick-translation-header">
             <h2>瞬間英作文練習</h2>
-            <button className="close-button" onClick={handleClose}>✕</button>
+            <button className="close-button" onClick={handleClose}>
+              ✕
+            </button>
           </div>
           <div className="quick-translation-content">
             <p className="error-message">このノートには練習できる文がありません。</p>
@@ -272,14 +276,17 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
       <div className="quick-translation-modal">
         <div className="quick-translation-header">
           <h2>瞬間英作文練習</h2>
-          <button className="close-button" onClick={handleClose}>✕</button>
+          <button className="close-button" onClick={handleClose}>
+            ✕
+          </button>
         </div>
 
         <div className="quick-translation-content">
           {!isPlaying ? (
             <div className="start-screen">
               <p className="practice-description">
-                日本語を聞いて英語を考える練習です。<br />
+                日本語を聞いて英語を考える練習です。
+                <br />
                 {totalLines}個の文を繰り返し練習します。
               </p>
 
@@ -318,13 +325,11 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
               </button>
             </div>
           ) : (
-            <div 
-              className="practice-screen" 
-              tabIndex={0} 
-              onKeyDown={handleKeyDown}
-            >
+            <div className="practice-screen" tabIndex={0} onKeyDown={handleKeyDown}>
               <div className="progress-info">
-                <span>文 {currentIndex + 1} / {totalLines}</span>
+                <span>
+                  文 {currentIndex + 1} / {totalLines}
+                </span>
               </div>
 
               <div className="current-practice">
@@ -333,10 +338,10 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
                   <p className="practice-text">{validPairs[currentIndex]?.japanese}</p>
                 </div>
 
-{currentPhase === 'thinking' && (
+                {currentPhase === 'thinking' && (
                   <div className="thinking-phase active">
                     <h3>考える時間</h3>
-{thinkingTime === -1 ? (
+                    {thinkingTime === -1 ? (
                       <button className="show-answer-button" onClick={handleShowAnswer}>
                         答えを見る
                       </button>
