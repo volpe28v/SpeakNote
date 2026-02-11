@@ -15,6 +15,16 @@ interface QuickTranslationPracticeProps {
   onClose: () => void
 }
 
+// Fisher-Yatesシャッフル
+const shuffleArray = (length: number): number[] => {
+  const arr = Array.from({ length }, (_, i) => i)
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
 const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ note, onClose }) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -23,17 +33,22 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
   >('idle')
   const [thinkingTime, setThinkingTime] = useState(5) // 秒
   const [englishRepeatCount, setEnglishRepeatCount] = useState(2)
+  const [isRandom, setIsRandom] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState(0)
   const [englishRepeatCurrent, setEnglishRepeatCurrent] = useState(0)
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isProcessingRef = useRef(false)
+  const orderIndicesRef = useRef<number[]>([])
 
   // 有効な練習ペアを抽出
   const validPairs = extractValidPairs(note.text.split('\n'), note.translations || [])
 
   const totalLines = validPairs.length
+
+  // 現在の出題ペアを取得
+  const currentPair = validPairs[orderIndicesRef.current[currentIndex]] ?? validPairs[currentIndex]
 
   const cleanup = () => {
     if (intervalRef.current) {
@@ -93,7 +108,7 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
       switch (currentPhase) {
         case 'japanese': {
           // 日本語を読み上げ
-          const japaneseText = validPairs[currentIndex]?.japanese
+          const japaneseText = currentPair?.japanese
           if (japaneseText && japaneseText.trim()) {
             const handleSpeechEnd = () => {
               phaseTimeoutRef.current = setTimeout(() => {
@@ -143,7 +158,7 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
 
         case 'english': {
           // 英語を読み上げ
-          const englishText = validPairs[currentIndex]?.english
+          const englishText = currentPair?.english
           if (englishText && englishText.trim()) {
             const handleNextPhase = () => {
               const nextRepeat = englishRepeatCurrent + 1
@@ -216,6 +231,9 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
 
   const startPractice = () => {
     cleanup()
+    orderIndicesRef.current = isRandom
+      ? shuffleArray(totalLines)
+      : Array.from({ length: totalLines }, (_, i) => i)
     setIsPlaying(true)
     setCurrentIndex(0)
     setEnglishRepeatCurrent(0)
@@ -318,6 +336,17 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
                     ))}
                   </select>
                 </div>
+
+                <div className="setting-item">
+                  <label>出題順：</label>
+                  <select
+                    value={isRandom ? 'random' : 'sequential'}
+                    onChange={(e) => setIsRandom(e.target.value === 'random')}
+                  >
+                    <option value="sequential">順番通り</option>
+                    <option value="random">ランダム</option>
+                  </select>
+                </div>
               </div>
 
               <button className="start-button" onClick={startPractice}>
@@ -335,7 +364,7 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
               <div className="current-practice">
                 <div className={`practice-phase ${currentPhase === 'japanese' ? 'active' : ''}`}>
                   <h3>日本語</h3>
-                  <p className="practice-text">{validPairs[currentIndex]?.japanese}</p>
+                  <p className="practice-text">{currentPair?.japanese}</p>
                 </div>
 
                 {currentPhase === 'thinking' && (
@@ -355,7 +384,7 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
                   <h3>英語</h3>
                   <p className="practice-text">
                     {currentPhase === 'english' || currentPhase === 'pause'
-                      ? validPairs[currentIndex]?.english
+                      ? currentPair?.english
                       : '???'}
                   </p>
                   {currentPhase === 'english' && englishRepeatCount > 1 && (
