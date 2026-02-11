@@ -1,10 +1,10 @@
 import { createContext, useContext, ReactNode } from 'react'
-import { useAuth } from '../hooks/useAuth'
-import { useTranslation } from '../hooks/useTranslation'
-import { useNotes } from '../hooks/useNotes'
-import { useInput } from '../hooks/useInput'
-import { useUnsavedChanges } from '../hooks/useUnsavedChanges'
-import { useQuickTranslation } from '../hooks/useQuickTranslation'
+import { useAuth } from '@/hooks/useAuth'
+import { useTranslation } from '@/hooks/useTranslation'
+import { useNotes } from '@/hooks/useNotes'
+import { useInput } from '@/hooks/useInput'
+import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
+import { useQuickTranslation } from '@/hooks/useQuickTranslation'
 
 interface AppContextType {
   auth: ReturnType<typeof useAuth>
@@ -26,7 +26,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const quickTranslation = useQuickTranslation()
 
   return (
-    <AppContext.Provider value={{ auth, translation, notes, input, unsavedChanges, quickTranslation }}>
+    <AppContext.Provider
+      value={{ auth, translation, notes, input, unsavedChanges, quickTranslation }}
+    >
       {children}
     </AppContext.Provider>
   )

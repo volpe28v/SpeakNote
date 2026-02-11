@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { AuthManager, FirestoreManager } from '../lib/firebase'
+import { AuthManager, FirestoreManager } from '@/lib/firebase'
 
 interface UseAutoSaveOptions {
   text: string

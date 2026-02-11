@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Note } from '../types'
+import type { Note } from '@/types'
 
 export function useQuickTranslation() {
   const [isPracticing, setIsPracticing] = useState(false)
