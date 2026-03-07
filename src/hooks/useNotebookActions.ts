@@ -1,12 +1,7 @@
 import { useCallback } from 'react'
 import { deferredToast } from '@/lib/toast'
 import type { AuthManager, FirestoreManager } from '@/lib/firebase'
-import type { Note } from '@/types'
-
-type SaveResult = {
-  type: 'saved' | 'updated'
-  id?: number
-}
+import type { Note, SaveResult } from '@/types'
 
 interface UseNotebookActionsProps {
   englishText: string
