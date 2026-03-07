@@ -50,23 +50,3 @@ export interface UIStrings {
   SAVED_NEW: string
   UPDATED: string
 }
-
-// DOM要素の型
-export interface DOMElements {
-  englishInput: HTMLTextAreaElement
-  speakButton: HTMLButtonElement
-  translateButton: HTMLButtonElement
-  translationText: HTMLTextAreaElement
-  saveButton: HTMLButtonElement
-  speakJapaneseButton: HTMLButtonElement
-  clearButton: HTMLButtonElement
-  loginButton: HTMLButtonElement
-  userInfo: HTMLDivElement
-  userAvatar: HTMLImageElement
-  userName: HTMLSpanElement
-  logoutButton: HTMLButtonElement
-  loginRequiredMessage: HTMLDivElement
-  loginPromptButton: HTMLButtonElement
-  notebookContainer: HTMLDivElement
-  savedSentencesContainer: HTMLDivElement
-}
