@@ -11,7 +11,7 @@ interface UseNoteSyncProps {
     firestoreManager: FirestoreManager,
     callback?: (note: Note) => void
   ) => Promise<void>
-  setTranslationLines: (translations: string[]) => void
+  loadTranslations: (englishText: string, translations: string[]) => void
   clearTranslationLines: () => void
   setCurrentEditingId: (id: number | null) => void
   markAsSaved: () => void
@@ -23,7 +23,7 @@ export function useNoteSync({
   authManager,
   firestoreManager,
   syncFromFirestore,
-  setTranslationLines,
+  loadTranslations,
   clearTranslationLines,
   setCurrentEditingId,
   markAsSaved,
@@ -35,7 +35,7 @@ export function useNoteSync({
       syncFromFirestore(authManager, firestoreManager, (note) => {
         onNoteLoad(note)
         if (note.translations) {
-          setTranslationLines(note.translations)
+          loadTranslations(note.text, note.translations)
         }
         setCurrentEditingId(note.id)
         markAsSaved()
@@ -46,7 +46,7 @@ export function useNoteSync({
     authManager,
     firestoreManager,
     syncFromFirestore,
-    setTranslationLines,
+    loadTranslations,
     setCurrentEditingId,
     markAsSaved,
     onNoteLoad,
@@ -59,7 +59,7 @@ export function useNoteSync({
 
       onNoteLoad(note)
       if (note.translations) {
-        setTranslationLines(note.translations)
+        loadTranslations(note.text, note.translations)
       } else {
         clearTranslationLines()
       }
@@ -71,5 +71,5 @@ export function useNoteSync({
     return () => {
       window.removeEventListener('noteSelected', handleNoteSelected as EventListener)
     }
-  }, [setTranslationLines, clearTranslationLines, setCurrentEditingId, markAsSaved, onNoteLoad])
+  }, [loadTranslations, clearTranslationLines, setCurrentEditingId, markAsSaved, onNoteLoad])
 }

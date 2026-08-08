@@ -543,6 +543,15 @@ h1 {
   min-width: 0;
 }
 
+/* 文字数表示（桁数が変わっても幅が揺れないよう等幅数字を使う） */
+.english-header .char-count {
+  margin-left: 15px;
+  color: #7f8c8d;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .english-header .autosave-status {
   margin-left: 15px;
 }
@@ -1030,7 +1039,6 @@ h1 {
 
 /* iPhone 13 mini および小型デバイス対応 */
 @media (max-width: 390px) {
-
   #notebook-container.mobile-view #english-side,
   #notebook-container.mobile-view #japanese-side {
     margin-bottom: 0;

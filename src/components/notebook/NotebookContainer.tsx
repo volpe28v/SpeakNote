@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useApp } from '@/contexts/AppContext'
+import { UI_STRINGS } from '@/constants/appConstants'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { useNotebookState } from '@/hooks/useNotebookState'
 import { useHighlightState } from '@/hooks/useHighlightState'
@@ -22,8 +23,9 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   const {
     translationLines,
     isTranslating,
+    translationProgress,
     handleTranslate,
-    setTranslationLines,
+    loadTranslations,
     clearTranslationLines,
     performAutoTranslation,
   } = translation
@@ -135,7 +137,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     authManager,
     firestoreManager,
     syncFromFirestore,
-    setTranslationLines,
+    loadTranslations,
     clearTranslationLines,
     setCurrentEditingId,
     markAsSaved,
@@ -164,6 +166,13 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
 
   const disabled = !user
 
+  // 分割翻訳中は残り行数が分かるようラベルに進捗を出す
+  const translateButtonLabel = !isTranslating
+    ? UI_STRINGS.TRANSLATE
+    : translationProgress
+      ? UI_STRINGS.TRANSLATING_PROGRESS(translationProgress.completed, translationProgress.total)
+      : UI_STRINGS.TRANSLATING
+
   return (
     <div
       id="notebook-container"
@@ -188,6 +197,9 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               English
               {hasUnsavedChanges && !isAutoSaving && <span className="unsaved-indicator">●</span>}
             </h2>
+            <span className="char-count">
+              {notebookState.englishText.length.toLocaleString()} chars
+            </span>
             {user && (
               <AutoSaveStatus
                 isAutoSaving={isAutoSaving}
@@ -267,7 +279,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
                 onClick={notebookActions.handleTranslateClick}
                 disabled={disabled || !notebookState.englishText.trim() || isTranslating}
               >
-                {isTranslating ? 'Translating...' : 'Translate'}
+                {translateButtonLabel}
               </button>
             </div>
           </div>

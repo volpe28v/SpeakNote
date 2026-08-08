@@ -8,7 +8,7 @@ import QuickTranslationPractice from '@/components/practice/QuickTranslationPrac
 function NotesList() {
   const { auth, translation, notes, unsavedChanges, quickTranslation } = useApp()
   const { user, authManager, firestoreManager } = auth
-  const { setTranslationLines } = translation
+  const { loadTranslations } = translation
   const { notes: notesList, currentEditingId, deleteNote, setCurrentEditingId } = notes
   const { hasUnsavedChanges } = unsavedChanges
   const { isPracticing, practiceNote, startPractice, stopPractice } = quickTranslation
@@ -26,7 +26,7 @@ function NotesList() {
     // この機能は NotebookContainer 側で処理
     // ここではクリック時の処理をイベント経由で通知する必要がある
     if (note.translations) {
-      setTranslationLines(note.translations)
+      loadTranslations(note.text, note.translations)
     }
     setCurrentEditingId(note.id)
 
