@@ -5,7 +5,8 @@ export const PRACTICE_TIMEOUTS = {
   QUICK_TRANSITION: 100, // 素早い遷移
   ENGLISH_REPEAT_INTERVAL: 2000, // 英語繰り返し間隔
   PAUSE_DURATION: 1000, // ポーズ時間
-  REACT_STRICT_DELAY: 50, // React StrictMode対策
+  COUNTDOWN_INTERVAL: 1000, // 考える時間のカウントダウン間隔
+  PHASE_START_DELAY: 50, // フェーズ開始までの間
 } as const
 
 export const THINKING_TIME_OPTIONS = [

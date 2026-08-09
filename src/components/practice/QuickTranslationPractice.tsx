@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import type { Note } from '@/types'
 import {
   PRACTICE_TIMEOUTS,
@@ -37,20 +37,26 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
   const [timeRemaining, setTimeRemaining] = useState(0)
   const [englishRepeatCurrent, setEnglishRepeatCurrent] = useState(0)
 
+  // 出題順。ref をレンダー中に読むと React の管理外の値に描画が依存するため state で持つ
+  const [order, setOrder] = useState<number[]>([])
+
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const phaseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const isProcessingRef = useRef(false)
-  const orderIndicesRef = useRef<number[]>([])
+  const practiceScreenRef = useRef<HTMLDivElement>(null)
 
-  // 有効な練習ペアを抽出
-  const validPairs = extractValidPairs(note.text.split('\n'), note.translations || [])
+  // 有効な練習ペアを抽出。毎レンダー作り直すと currentPair の参照も変わり、
+  // effect の依存に含められなくなる
+  const validPairs = useMemo(
+    () => extractValidPairs(note.text.split('\n'), note.translations || []),
+    [note]
+  )
 
   const totalLines = validPairs.length
 
   // 現在の出題ペアを取得
-  const currentPair = validPairs[orderIndicesRef.current[currentIndex]] ?? validPairs[currentIndex]
+  const currentPair = validPairs[order[currentIndex] ?? currentIndex]
 
-  const cleanup = () => {
+  const clearTimers = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
@@ -59,8 +65,11 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
       clearTimeout(phaseTimeoutRef.current)
       phaseTimeoutRef.current = null
     }
+  }
+
+  const cleanup = () => {
+    clearTimers()
     stopSpeech()
-    isProcessingRef.current = false
   }
 
   const stopPractice = () => {
@@ -75,10 +84,7 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
   // practice-screenにフォーカスを当てる
   useEffect(() => {
     if (isPlaying) {
-      const practiceScreen = document.querySelector('.practice-screen') as HTMLElement
-      if (practiceScreen) {
-        practiceScreen.focus()
-      }
+      practiceScreenRef.current?.focus()
     }
   }, [isPlaying])
 
@@ -87,45 +93,49 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
       return
     }
 
-    // 既に処理中の場合はスキップ（重複実行を防ぐ）
-    if (isProcessingRef.current) {
-      return
-    }
-    isProcessingRef.current = true
+    // この effect 実行が破棄されたかを示す。停止やフェーズ切り替えで cleanup が
+    // 走った後に、キャンセル済みの読み上げの onend が遅れて発火して次フェーズを
+    // 進めてしまうのを防ぐ（speechSynthesis.cancel() は onend を呼ぶ）
+    let cancelled = false
 
-    // 前のタイマーをクリアして音声もキャンセル
-    if (phaseTimeoutRef.current) {
-      clearTimeout(phaseTimeoutRef.current)
-      phaseTimeoutRef.current = null
+    const advance = (delayMs: number, action: () => void) => {
+      if (cancelled) return
+      phaseTimeoutRef.current = setTimeout(() => {
+        if (cancelled) return
+        action()
+      }, delayMs)
     }
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
+
+    const goToThinking = () => {
+      setCurrentPhase('thinking')
+      setTimeRemaining(thinkingTime)
     }
-    stopSpeech()
+
+    const goToNextRepeatOrPause = (delayMs: number) => {
+      const nextRepeat = englishRepeatCurrent + 1
+      if (nextRepeat < englishRepeatCount) {
+        advance(delayMs, () => {
+          setEnglishRepeatCurrent(nextRepeat)
+          setCurrentPhase('english')
+        })
+      } else {
+        advance(delayMs, () => setCurrentPhase('pause'))
+      }
+    }
 
     const executePhase = () => {
+      if (cancelled) return
+
       switch (currentPhase) {
         case 'japanese': {
           // 日本語を読み上げ
           const japaneseText = currentPair?.japanese
           if (japaneseText && japaneseText.trim()) {
-            const handleSpeechEnd = () => {
-              phaseTimeoutRef.current = setTimeout(() => {
-                isProcessingRef.current = false
-                setCurrentPhase('thinking')
-                setTimeRemaining(thinkingTime)
-              }, PRACTICE_TIMEOUTS.PHASE_TRANSITION)
-            }
-
+            const handleSpeechEnd = () => advance(PRACTICE_TIMEOUTS.PHASE_TRANSITION, goToThinking)
             speakText(japaneseText, 'japanese', handleSpeechEnd, handleSpeechEnd)
           } else {
             // テキストがない場合は即座に次へ
-            phaseTimeoutRef.current = setTimeout(() => {
-              isProcessingRef.current = false
-              setCurrentPhase('thinking')
-              setTimeRemaining(thinkingTime)
-            }, PRACTICE_TIMEOUTS.QUICK_TRANSITION)
+            advance(PRACTICE_TIMEOUTS.QUICK_TRANSITION, goToThinking)
           }
           break
         }
@@ -140,19 +150,16 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
             setTimeRemaining(countdown)
 
             intervalRef.current = setInterval(() => {
+              if (cancelled) return
               countdown--
               if (countdown <= 0) {
-                if (intervalRef.current) {
-                  clearInterval(intervalRef.current)
-                  intervalRef.current = null
-                }
-                isProcessingRef.current = false
+                clearTimers()
                 setCurrentPhase('english')
                 setEnglishRepeatCurrent(0)
               } else {
                 setTimeRemaining(countdown)
               }
-            }, 1000)
+            }, PRACTICE_TIMEOUTS.COUNTDOWN_INTERVAL)
           }
           break
 
@@ -160,80 +167,52 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
           // 英語を読み上げ
           const englishText = currentPair?.english
           if (englishText && englishText.trim()) {
-            const handleNextPhase = () => {
-              const nextRepeat = englishRepeatCurrent + 1
-
-              if (nextRepeat < englishRepeatCount) {
-                // もう一度英語を読み上げ
-                phaseTimeoutRef.current = setTimeout(() => {
-                  setEnglishRepeatCurrent(nextRepeat)
-                  isProcessingRef.current = false
-                  setCurrentPhase('english')
-                }, PRACTICE_TIMEOUTS.ENGLISH_REPEAT_INTERVAL)
-              } else {
-                // 次の文へ移行
-                phaseTimeoutRef.current = setTimeout(() => {
-                  isProcessingRef.current = false
-                  setCurrentPhase('pause')
-                }, PRACTICE_TIMEOUTS.ENGLISH_REPEAT_INTERVAL)
-              }
-            }
-
+            const handleNextPhase = () =>
+              goToNextRepeatOrPause(PRACTICE_TIMEOUTS.ENGLISH_REPEAT_INTERVAL)
             speakText(englishText, 'english', handleNextPhase, handleNextPhase)
           } else {
             // テキストがない場合は即座に次へ
-            const nextRepeat = englishRepeatCurrent + 1
-
-            if (nextRepeat < englishRepeatCount) {
-              phaseTimeoutRef.current = setTimeout(() => {
-                setEnglishRepeatCurrent(nextRepeat)
-                isProcessingRef.current = false
-                setCurrentPhase('english')
-              }, PRACTICE_TIMEOUTS.QUICK_TRANSITION)
-            } else {
-              phaseTimeoutRef.current = setTimeout(() => {
-                isProcessingRef.current = false
-                setCurrentPhase('pause')
-              }, PRACTICE_TIMEOUTS.QUICK_TRANSITION)
-            }
+            goToNextRepeatOrPause(PRACTICE_TIMEOUTS.QUICK_TRANSITION)
           }
           break
         }
 
         case 'pause':
           // 短い休憩後、次の文へ
-          phaseTimeoutRef.current = setTimeout(() => {
-            const nextIndex = (currentIndex + 1) % totalLines
-            setCurrentIndex(nextIndex)
+          advance(PRACTICE_TIMEOUTS.PAUSE_DURATION, () => {
+            setCurrentIndex((currentIndex + 1) % totalLines)
             setEnglishRepeatCurrent(0)
-            isProcessingRef.current = false
             setCurrentPhase('japanese')
-          }, 1000)
+          })
           break
       }
     }
 
-    // 少し遅延を入れて実行（React StrictModeの二重実行対策）
-    const timer = setTimeout(() => {
-      executePhase()
-    }, PRACTICE_TIMEOUTS.REACT_STRICT_DELAY)
+    const startTimer = setTimeout(executePhase, PRACTICE_TIMEOUTS.PHASE_START_DELAY)
 
+    // 破棄時にタイマーと読み上げを完全に止める。
+    // ここを中途半端にすると、フェーズが進まなくなったり
+    // 停止後に読み上げが鳴り続けたりする
     return () => {
-      clearTimeout(timer)
-      if (phaseTimeoutRef.current) {
-        clearTimeout(phaseTimeoutRef.current)
-      }
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
+      cancelled = true
+      clearTimeout(startTimer)
+      clearTimers()
+      stopSpeech()
     }
-  }, [currentPhase, currentIndex, englishRepeatCurrent, thinkingTime, englishRepeatCount]) // 必要な依存を追加
+  }, [
+    isPlaying,
+    currentPhase,
+    currentIndex,
+    currentPair,
+    totalLines,
+    englishRepeatCurrent,
+    thinkingTime,
+    englishRepeatCount,
+  ])
 
   const startPractice = () => {
     cleanup()
-    orderIndicesRef.current = isRandom
-      ? shuffleArray(totalLines)
-      : Array.from({ length: totalLines }, (_, i) => i)
+    setOrder(isRandom ? shuffleArray(totalLines) : Array.from({ length: totalLines }, (_, i) => i))
     setIsPlaying(true)
     setCurrentIndex(0)
     setEnglishRepeatCurrent(0)
@@ -252,7 +231,6 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
 
   const handleShowAnswer = () => {
     if (currentPhase === 'thinking' && thinkingTime === INFINITE_THINKING_TIME) {
-      isProcessingRef.current = false
       setCurrentPhase('english')
       setEnglishRepeatCurrent(0)
     }
@@ -354,7 +332,12 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
               </button>
             </div>
           ) : (
-            <div className="practice-screen" tabIndex={0} onKeyDown={handleKeyDown}>
+            <div
+              className="practice-screen"
+              ref={practiceScreenRef}
+              tabIndex={0}
+              onKeyDown={handleKeyDown}
+            >
               <div className="progress-info">
                 <span>
                   文 {currentIndex + 1} / {totalLines}
@@ -370,7 +353,7 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
                 {currentPhase === 'thinking' && (
                   <div className="thinking-phase active">
                     <h3>考える時間</h3>
-                    {thinkingTime === -1 ? (
+                    {thinkingTime === INFINITE_THINKING_TIME ? (
                       <button className="show-answer-button" onClick={handleShowAnswer}>
                         答えを見る
                       </button>
