@@ -1,5 +1,5 @@
 import { keymap, EditorView } from '@codemirror/view'
-import { EditorState } from '@codemirror/state'
+import { EditorState, Prec } from '@codemirror/state'
 import { insertNewlineAndIndent } from '@codemirror/commands'
 import { speakEnglish, createUtterance, SPEECH_CONFIG } from '@/lib/speech'
 import { keySoundManager } from '@/lib/keySound'
@@ -29,89 +29,94 @@ const speakCurrentLine = (view: EditorView, suffix: string, config: SpeechConfig
   }
 }
 
+// basicSetup は extensions より先に並ぶため、既定では defaultKeymap のほうが優先度が高い。
+// Prec.highest で包まないと Enter は defaultKeymap に先に処理され、
+// ここの読み上げ・自動翻訳が一度も実行されない。
 export const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
-  return keymap.of([
-    {
-      key: 'Enter',
-      run: (view) => {
-        // Enter音を再生
-        keySoundManager.playEnterSound()
+  return Prec.highest(
+    keymap.of([
+      {
+        key: 'Enter',
+        run: (view) => {
+          // Enter音を再生
+          keySoundManager.playEnterSound()
 
-        // 改行前の状態でカーソル位置の行を取得
-        const { from } = view.state.selection.main
-        const line = view.state.doc.lineAt(from)
-        const currentLine = line.text
+          // 改行前の状態でカーソル位置の行を取得
+          const { from } = view.state.selection.main
+          const line = view.state.doc.lineAt(from)
+          const currentLine = line.text
 
-        // 改行処理の前に音声と翻訳を実行
-        if (currentLine.trim()) {
-          speakEnglish(currentLine.trim(), false)
-          if (onAutoTranslation) {
-            setTimeout(() => {
-              onAutoTranslation().catch((error) => {
-                console.error('Auto translation error:', error)
-              })
-            }, 100)
+          // 改行処理の前に音声と翻訳を実行
+          if (currentLine.trim()) {
+            speakEnglish(currentLine.trim(), false)
+            if (onAutoTranslation) {
+              setTimeout(() => {
+                onAutoTranslation().catch((error) => {
+                  console.error('Auto translation error:', error)
+                })
+              }, 100)
+            }
           }
-        }
 
-        // 改行は標準コマンドに任せる。手で '\n' を挿入すると
-        // 選択範囲がある場合に置換されず、インデントも引き継がれない
-        return insertNewlineAndIndent(view)
+          // 改行は標準コマンドに任せる。手で '\n' を挿入すると
+          // 選択範囲がある場合に置換されず、インデントも引き継がれない
+          return insertNewlineAndIndent(view)
+        },
       },
-    },
-    {
-      key: 'Space',
-      run: (view) => {
-        // スペース音を再生
-        keySoundManager.playSpaceSound()
+      {
+        key: 'Space',
+        run: (view) => {
+          // スペース音を再生
+          keySoundManager.playSpaceSound()
 
-        const currentLine = getCurrentLine(view.state)
-        const lastChar = currentLine.slice(-1)
-        const isPunctuationBefore = /[.!?]/.test(lastChar)
+          const currentLine = getCurrentLine(view.state)
+          const lastChar = currentLine.slice(-1)
+          const isPunctuationBefore = /[.!?]/.test(lastChar)
 
-        if (!isPunctuationBefore && currentLine.trim()) {
-          const lastWord = getLastWord(currentLine)
-          if (lastWord) {
-            window.speechSynthesis.cancel()
-            const processedText = lastWord === 'I' ? 'i' : lastWord
-            const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
-            window.speechSynthesis.speak(utterance)
+          if (!isPunctuationBefore && currentLine.trim()) {
+            const lastWord = getLastWord(currentLine)
+            if (lastWord) {
+              window.speechSynthesis.cancel()
+              const processedText = lastWord === 'I' ? 'i' : lastWord
+              const utterance = createUtterance(processedText, SPEECH_CONFIG.ENGLISH)
+              window.speechSynthesis.speak(utterance)
+            }
           }
-        }
-        return false // デフォルトのスペース入力を続行
+          return false // デフォルトのスペース入力を続行
+        },
       },
-    },
-    {
-      key: '.',
-      run: (view) => {
-        keySoundManager.playKeySound()
-        speakCurrentLine(view, '.', SPEECH_CONFIG.ENGLISH)
-        return false
+      {
+        key: '.',
+        run: (view) => {
+          keySoundManager.playKeySound()
+          speakCurrentLine(view, '.', SPEECH_CONFIG.ENGLISH)
+          return false
+        },
       },
-    },
-    {
-      key: '?',
-      run: (view) => {
-        keySoundManager.playKeySound()
-        speakCurrentLine(view, '?', SPEECH_CONFIG.ENGLISH_QUESTION)
-        return false
+      {
+        key: '?',
+        run: (view) => {
+          keySoundManager.playKeySound()
+          speakCurrentLine(view, '?', SPEECH_CONFIG.ENGLISH_QUESTION)
+          return false
+        },
       },
-    },
-    {
-      key: '!',
-      run: (view) => {
-        keySoundManager.playKeySound()
-        speakCurrentLine(view, '!', SPEECH_CONFIG.ENGLISH)
-        return false
+      {
+        key: '!',
+        run: (view) => {
+          keySoundManager.playKeySound()
+          speakCurrentLine(view, '!', SPEECH_CONFIG.ENGLISH)
+          return false
+        },
       },
-    },
-    {
-      key: 'Backspace',
-      run: () => {
-        // バックスペース音を再生
-        keySoundManager.playDeleteSound()
-        return false // デフォルトの削除動作を続行
+      {
+        key: 'Backspace',
+        run: () => {
+          // バックスペース音を再生
+          keySoundManager.playDeleteSound()
+          return false // デフォルトの削除動作を続行
+        },
       },
-    },
-  ])
+    ])
+  )
 }
