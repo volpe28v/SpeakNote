@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 
 export function useNotebookState() {
   const [englishText, setEnglishText] = useState('')
-  const [translationText, setTranslationText] = useState('')
   const [originalContent, setOriginalContent] = useState('')
   const [currentView, setCurrentView] = useState<'english' | 'japanese'>('english')
 
@@ -14,20 +13,17 @@ export function useNotebookState() {
 
   const resetState = useCallback(() => {
     setEnglishText('')
-    setTranslationText('')
     setOriginalContent('')
   }, [])
 
   return {
     // 状態
     englishText,
-    translationText,
     originalContent,
     currentView,
 
     // 更新関数
     setEnglishText,
-    setTranslationText,
     setOriginalContent,
 
     // アクション

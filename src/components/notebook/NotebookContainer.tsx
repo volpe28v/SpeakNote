@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { UI_STRINGS } from '@/constants/appConstants'
 import { useAutoSave } from '@/hooks/useAutoSave'
@@ -9,7 +9,6 @@ import { useSelectionHandlers } from '@/hooks/useSelectionHandlers'
 import { useSpeechHandlers } from '@/hooks/useSpeechHandlers'
 import { useNoteSync } from '@/hooks/useNoteSync'
 import { useUnsavedChangeTracker } from '@/hooks/useUnsavedChangeTracker'
-import { useTranslationSync } from '@/hooks/useTranslationSync'
 import CodeMirrorEditor from '@/components/common/CodeMirrorEditor'
 import AutoSaveStatus from '@/components/common/AutoSaveStatus'
 import type { AuthManager, FirestoreManager } from '@/lib/firebase'
@@ -95,6 +94,10 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     clearTranslationLines,
   })
 
+  // 訳文テキストは訳文行の連結そのもの。state + effect で同期すると
+  // 余分なレンダーが挟まり、一瞬だけ古い訳文が描画される
+  const translationText = useMemo(() => translationLines.join('\n'), [translationLines])
+
   const selectionHandlers = useSelectionHandlers({
     setEnglishHighlight: highlightState.setEnglishHighlight,
     setJapaneseHighlight: highlightState.setJapaneseHighlight,
@@ -103,7 +106,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
 
   const speechHandlers = useSpeechHandlers({
     englishText: notebookState.englishText,
-    translationText: notebookState.translationText,
+    translationText,
     selectedText: highlightState.selectedText,
     selectedEnglishText: highlightState.selectedEnglishText,
     highlightedLineIndex: highlightState.highlightedLineIndex,
@@ -176,12 +179,10 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   })
 
   // 翻訳同期処理
-  useTranslationSync({
-    translationLines,
-    setTranslationText: notebookState.setTranslationText,
-    resetAutoSaveStatusRef,
-    resetAutoSaveStatus,
-  })
+  // 親（App）からタブ切り替え時に自動保存ステータスを消せるようにする
+  useEffect(() => {
+    resetAutoSaveStatusRef.current = resetAutoSaveStatus
+  }, [resetAutoSaveStatus, resetAutoSaveStatusRef])
 
   const disabled = !user
 
@@ -277,7 +278,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
           <h2>Japanese</h2>
           <div id="translation-area">
             <CodeMirrorEditor
-              value={notebookState.translationText}
+              value={translationText}
               onChange={NOOP} // 読み取り専用
               onSelectionChange={selectionHandlers.handleJapaneseSelection}
               highlightedLineIndex={highlightState.highlightedLineIndex}
@@ -290,7 +291,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               <button
                 id="speak-japanese-button"
                 onClick={speechHandlers.handleSpeakJapanese}
-                disabled={disabled || !notebookState.translationText.trim()}
+                disabled={disabled || !translationText.trim()}
               >
                 Speak
               </button>
