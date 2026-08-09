@@ -7,7 +7,6 @@ interface UseSpeechHandlersProps {
   selectedText: string
   selectedEnglishText: string
   highlightedLineIndex: number | null
-  highlightedJapaneseLineIndex: number | null
   translationLines: string[]
 }
 
@@ -17,7 +16,6 @@ export function useSpeechHandlers({
   selectedText,
   selectedEnglishText,
   highlightedLineIndex,
-  highlightedJapaneseLineIndex,
   translationLines,
 }: UseSpeechHandlersProps) {
   // 選択された英語に対応する元の日本語翻訳を取得
@@ -50,7 +48,8 @@ export function useSpeechHandlers({
     }
 
     // 2. 日本語が選択されて英語がハイライトされている場合
-    if (highlightedLineIndex !== null && highlightedLineIndex >= 0) {
+    // カーソルを置いただけのハイライトは対象外（全文読み上げを残すため）
+    if (selectedText && highlightedLineIndex !== null && highlightedLineIndex >= 0) {
       const lines = englishText.split('\n')
       if (highlightedLineIndex < lines.length) {
         const lineToSpeak = lines[highlightedLineIndex]
@@ -63,7 +62,7 @@ export function useSpeechHandlers({
 
     // 3. どちらも選択されていない場合は全文を読み上げ
     speakEnglish(englishText)
-  }, [selectedEnglishText, highlightedLineIndex, englishText])
+  }, [selectedEnglishText, selectedText, highlightedLineIndex, englishText])
 
   const handleSpeakJapanese = useCallback(() => {
     // 1. 日本語テキストが選択されている場合
@@ -73,9 +72,10 @@ export function useSpeechHandlers({
     }
 
     // 2. 英語が選択されて日本語がハイライトされている場合
-    if (highlightedJapaneseLineIndex !== null && highlightedJapaneseLineIndex >= 0) {
-      if (highlightedJapaneseLineIndex < translationLines.length) {
-        const lineToSpeak = translationLines[highlightedJapaneseLineIndex]
+    // カーソルを置いただけのハイライトは対象外（全文読み上げを残すため）
+    if (selectedEnglishText && highlightedLineIndex !== null && highlightedLineIndex >= 0) {
+      if (highlightedLineIndex < translationLines.length) {
+        const lineToSpeak = translationLines[highlightedLineIndex]
         if (lineToSpeak && lineToSpeak.trim()) {
           speakJapanese(lineToSpeak.trim())
           return
@@ -97,7 +97,7 @@ export function useSpeechHandlers({
   }, [
     selectedText,
     selectedEnglishText,
-    highlightedJapaneseLineIndex,
+    highlightedLineIndex,
     translationLines,
     translationText,
     getOriginalJapaneseText,

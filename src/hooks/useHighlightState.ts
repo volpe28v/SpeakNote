@@ -1,47 +1,35 @@
 import { useState } from 'react'
 
-export interface HighlightState {
-  selectedText: string
-  selectedEnglishText: string
-  highlightedLineIndex: number | null
-  highlightedJapaneseLineIndex: number | null
-}
+// どちら側の操作でハイライトされたか。
+// カーソルのある側を自動スクロールさせない（入力中に画面が跳ねる）ために使う
+export type HighlightSource = 'english' | 'japanese' | null
 
 export function useHighlightState() {
   const [selectedText, setSelectedText] = useState('')
   const [selectedEnglishText, setSelectedEnglishText] = useState('')
+  // 英文行と訳文行は1:1対応のため、ハイライト位置は両ペインで共通
   const [highlightedLineIndex, setHighlightedLineIndex] = useState<number | null>(null)
-  const [highlightedJapaneseLineIndex, setHighlightedJapaneseLineIndex] = useState<number | null>(
-    null
-  )
-
-  const clearEnglishSelection = () => {
-    setSelectedEnglishText('')
-    setHighlightedJapaneseLineIndex(null)
-  }
-
-  const clearJapaneseSelection = () => {
-    setSelectedText('')
-    setHighlightedLineIndex(null)
-  }
+  const [highlightSource, setHighlightSource] = useState<HighlightSource>(null)
 
   const clearAllSelections = () => {
-    clearEnglishSelection()
-    clearJapaneseSelection()
+    setSelectedText('')
+    setSelectedEnglishText('')
+    setHighlightedLineIndex(null)
+    setHighlightSource(null)
   }
 
-  const setEnglishHighlight = (selectedText: string, lineNumber: number | null) => {
-    setSelectedEnglishText(selectedText)
-    setHighlightedJapaneseLineIndex(lineNumber)
-    // 日本語の選択状態をクリア
-    clearJapaneseSelection()
-  }
-
-  const setJapaneseHighlight = (selectedText: string, lineNumber: number | null) => {
-    setSelectedText(selectedText)
+  const setEnglishHighlight = (text: string, lineNumber: number | null) => {
+    setSelectedEnglishText(text)
+    setSelectedText('')
     setHighlightedLineIndex(lineNumber)
-    // 英語の選択状態をクリア
-    clearEnglishSelection()
+    setHighlightSource('english')
+  }
+
+  const setJapaneseHighlight = (text: string, lineNumber: number | null) => {
+    setSelectedText(text)
+    setSelectedEnglishText('')
+    setHighlightedLineIndex(lineNumber)
+    setHighlightSource('japanese')
   }
 
   return {
@@ -49,17 +37,9 @@ export function useHighlightState() {
     selectedText,
     selectedEnglishText,
     highlightedLineIndex,
-    highlightedJapaneseLineIndex,
-
-    // 更新関数
-    setSelectedText,
-    setSelectedEnglishText,
-    setHighlightedLineIndex,
-    setHighlightedJapaneseLineIndex,
+    highlightSource,
 
     // アクション
-    clearEnglishSelection,
-    clearJapaneseSelection,
     clearAllSelections,
     setEnglishHighlight,
     setJapaneseHighlight,

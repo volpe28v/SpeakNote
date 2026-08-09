@@ -84,12 +84,9 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   })
 
   const selectionHandlers = useSelectionHandlers({
-    englishText: notebookState.englishText,
-    translationText: notebookState.translationText,
     setEnglishHighlight: highlightState.setEnglishHighlight,
     setJapaneseHighlight: highlightState.setJapaneseHighlight,
-    clearEnglishSelection: highlightState.clearEnglishSelection,
-    clearJapaneseSelection: highlightState.clearJapaneseSelection,
+    clearHighlight: highlightState.clearAllSelections,
   })
 
   const speechHandlers = useSpeechHandlers({
@@ -98,7 +95,6 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     selectedText: highlightState.selectedText,
     selectedEnglishText: highlightState.selectedEnglishText,
     highlightedLineIndex: highlightState.highlightedLineIndex,
-    highlightedJapaneseLineIndex: highlightState.highlightedJapaneseLineIndex,
     translationLines,
   })
 
@@ -217,6 +213,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               onAutoTranslation={notebookActions.handleAutoTranslation}
               onSelectionChange={selectionHandlers.handleEnglishSelection}
               highlightedLineIndex={highlightState.highlightedLineIndex}
+              scrollHighlightIntoView={highlightState.highlightSource === 'japanese'}
               placeholder="Type English here (Enter for translation)"
               disabled={disabled}
               className="english-input-editor"
@@ -261,7 +258,8 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               value={notebookState.translationText}
               onChange={() => {}} // 読み取り専用
               onSelectionChange={selectionHandlers.handleJapaneseSelection}
-              highlightedLineIndex={highlightState.highlightedJapaneseLineIndex}
+              highlightedLineIndex={highlightState.highlightedLineIndex}
+              scrollHighlightIntoView={highlightState.highlightSource === 'english'}
               placeholder="Japanese translation will appear here"
               disabled={true} // 読み取り専用
               className="japanese-input-editor"

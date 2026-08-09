@@ -14,6 +14,9 @@ interface CodeMirrorEditorProps {
   onAutoTranslation?: () => Promise<void>
   onSelectionChange?: (selectedText: string, lineNumber: number | null) => void
   highlightedLineIndex?: number | null
+  // ハイライト行を画面内にスクロールするか。
+  // カーソルのある側で有効にすると入力のたびに画面が跳ねるため、反対側だけ有効にする
+  scrollHighlightIntoView?: boolean
   placeholder?: string
   disabled?: boolean
   className?: string
@@ -123,6 +126,7 @@ function CodeMirrorEditor({
   onAutoTranslation,
   onSelectionChange,
   highlightedLineIndex,
+  scrollHighlightIntoView = true,
   placeholder = '',
   disabled = false,
   className = '',
@@ -150,17 +154,10 @@ function CodeMirrorEditor({
     const selectionHandler = EditorView.updateListener.of((update) => {
       if (update.selectionSet && onSelectionChange) {
         const { from, to } = update.state.selection.main
-        if (from !== to) {
-          // テキストが選択されている場合
-          const selectedText = update.state.doc.sliceString(from, to)
-          // 選択開始位置の行番号を取得（0ベース）
-          const line = update.state.doc.lineAt(from)
-          const lineNumber = line.number - 1
-          onSelectionChange(selectedText.trim(), lineNumber)
-        } else {
-          // 選択が解除された場合
-          onSelectionChange('', null)
-        }
+        // 選択していなくてもカーソル行を通知し、反対側の行をハイライトできるようにする
+        const line = update.state.doc.lineAt(from)
+        const selectedText = from === to ? '' : update.state.doc.sliceString(from, to)
+        onSelectionChange(selectedText.trim(), line.number - 1)
       }
     })
 
@@ -195,6 +192,7 @@ function CodeMirrorEditor({
   // ハイライトされた行が変更された時にスクロール
   React.useEffect(() => {
     if (
+      scrollHighlightIntoView &&
       editorViewRef.current &&
       highlightedLineIndex !== null &&
       highlightedLineIndex !== undefined &&
@@ -216,7 +214,7 @@ function CodeMirrorEditor({
         })
       }
     }
-  }, [highlightedLineIndex])
+  }, [highlightedLineIndex, scrollHighlightIntoView])
 
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
