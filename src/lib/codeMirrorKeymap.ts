@@ -1,5 +1,6 @@
 import { keymap, EditorView } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
+import { insertNewlineAndIndent } from '@codemirror/commands'
 import { speakEnglish, createUtterance, SPEECH_CONFIG } from '@/lib/speech'
 import { keySoundManager } from '@/lib/keySound'
 import type { SpeechConfig } from '@/types'
@@ -53,12 +54,9 @@ export const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
           }
         }
 
-        // デフォルトの改行動作を実行
-        view.dispatch({
-          changes: { from: view.state.selection.main.head, insert: '\n' },
-        })
-
-        return true
+        // 改行は標準コマンドに任せる。手で '\n' を挿入すると
+        // 選択範囲がある場合に置換されず、インデントも引き継がれない
+        return insertNewlineAndIndent(view)
       },
     },
     {

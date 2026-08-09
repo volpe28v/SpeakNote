@@ -156,10 +156,6 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     resetAutoSaveStatus,
   })
 
-  const handleKeyDown = async () => {
-    // CodeMirrorでは独自のキーマップで処理するため、ここでは何もしない
-  }
-
   const disabled = !user
 
   // 分割翻訳中は残り行数が分かるようラベルに進捗を出す
@@ -209,7 +205,6 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
             <CodeMirrorEditor
               value={notebookState.englishText}
               onChange={notebookState.setEnglishText}
-              onKeyDown={handleKeyDown}
               onAutoTranslation={notebookActions.handleAutoTranslation}
               onSelectionChange={selectionHandlers.handleEnglishSelection}
               highlightedLineIndex={highlightState.highlightedLineIndex}

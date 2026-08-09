@@ -2,7 +2,6 @@ import React from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { EditorView, Decoration } from '@codemirror/view'
 import { EditorState, Extension } from '@codemirror/state'
-import { speakEnglish } from '@/lib/speech'
 import { spellCheckField, initSpellCheck, setUpdateCallback } from '@/lib/spellcheck'
 import { createSpeechKeymap } from '@/lib/codeMirrorKeymap'
 import { useKeySound } from '@/hooks/useKeySound'
@@ -10,7 +9,6 @@ import { useKeySound } from '@/hooks/useKeySound'
 interface CodeMirrorEditorProps {
   value: string
   onChange: (value: string) => void
-  onKeyDown?: (event: React.KeyboardEvent) => void
   onAutoTranslation?: () => Promise<void>
   onSelectionChange?: (selectedText: string, lineNumber: number | null) => void
   highlightedLineIndex?: number | null
@@ -122,7 +120,6 @@ const noteTheme = EditorView.theme({
 function CodeMirrorEditor({
   value,
   onChange,
-  onKeyDown,
   onAutoTranslation,
   onSelectionChange,
   highlightedLineIndex,
@@ -216,75 +213,13 @@ function CodeMirrorEditor({
     }
   }, [highlightedLineIndex, scrollHighlightIntoView])
 
-  const handleKeyDown = React.useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'Enter') {
-        // ドキュメントのセレクションから現在の行を正確に取得
-        const selection = window.getSelection()
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0)
-
-          // カーソル位置を含む行要素を探す
-          let currentElement: Node | null = range.startContainer
-          if (currentElement.nodeType === Node.TEXT_NODE) {
-            currentElement = currentElement.parentElement
-          }
-
-          // .cm-line クラスの要素を見つける
-          while (
-            currentElement &&
-            currentElement.nodeType === Node.ELEMENT_NODE &&
-            !(currentElement as Element).classList?.contains('cm-line')
-          ) {
-            currentElement = (currentElement as Element).parentElement
-          }
-
-          if (
-            currentElement &&
-            currentElement.nodeType === Node.ELEMENT_NODE &&
-            (currentElement as Element).classList.contains('cm-line')
-          ) {
-            const currentLine = currentElement.textContent || ''
-
-            if (currentLine.trim()) {
-              speakEnglish(currentLine.trim(), false)
-              if (onAutoTranslation) {
-                setTimeout(() => {
-                  onAutoTranslation().catch((error) => {
-                    console.error('Auto translation error from DOM handler:', error)
-                  })
-                }, 100)
-              }
-              return
-            }
-          }
-        }
-
-        // フォールバック: value から最後の非空行を取得
-        const lines = value.split('\n')
-        const lastNonEmptyLine = lines.filter((line) => line.trim()).pop() || ''
-
-        if (lastNonEmptyLine.trim()) {
-          speakEnglish(lastNonEmptyLine.trim(), false)
-          if (onAutoTranslation) {
-            setTimeout(() => {
-              onAutoTranslation().catch((error) => {
-                console.error('Fallback: Auto translation error:', error)
-              })
-            }, 100)
-          }
-        }
-      }
-
-      if (onKeyDown) {
-        onKeyDown(event)
-      }
-    },
-    [onKeyDown, value, onAutoTranslation]
-  )
+  // Enter キーの処理は codeMirrorKeymap.ts の keymap に一本化している。
+  // ここで React の onKeyDown からも処理すると、CodeMirror の keymap は
+  // stopPropagation しないため二重に発火し、改行挿入後のカーソル位置を見て
+  // 誤った行を読み上げてしまう。
 
   return (
-    <div className={`codemirror-wrapper ${className}`} onKeyDown={handleKeyDown}>
+    <div className={`codemirror-wrapper ${className}`}>
       <CodeMirror
         value={value}
         onChange={onChange}
