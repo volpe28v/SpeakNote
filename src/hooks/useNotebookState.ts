@@ -1,12 +1,5 @@
 import { useState } from 'react'
 
-export interface NotebookState {
-  englishText: string
-  translationText: string
-  originalContent: string
-  currentView: 'english' | 'japanese'
-}
-
 export function useNotebookState() {
   const [englishText, setEnglishText] = useState('')
   const [translationText, setTranslationText] = useState('')
@@ -34,7 +27,6 @@ export function useNotebookState() {
     setEnglishText,
     setTranslationText,
     setOriginalContent,
-    setCurrentView,
 
     // アクション
     toggleView,

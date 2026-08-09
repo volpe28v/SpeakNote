@@ -114,9 +114,3 @@ export async function initSpellCheck() {
     updateCallback()
   }
 }
-
-// 単語の修正候補を取得
-export function getSuggestions(word: string): string[] {
-  if (!dictionary) return []
-  return dictionary.suggest(word) || []
-}

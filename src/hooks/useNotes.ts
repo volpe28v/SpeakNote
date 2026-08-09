@@ -6,7 +6,6 @@ import type { Note, SaveResult } from '@/types'
 interface UseNotesReturn {
   notes: Note[]
   currentEditingId: number | null
-  hasAutoLoadedLatestNote: boolean
   isSaving: boolean
   saveNote: (
     text: string,
@@ -19,10 +18,7 @@ interface UseNotesReturn {
     authManager: AuthManager,
     firestoreManager: FirestoreManager
   ) => Promise<void>
-  loadNote: (note: Note, onEditingStart: (id: number) => void) => Note
   setCurrentEditingId: (id: number | null) => void
-  setNotes: (notes: Note[]) => void
-  resetFlags: () => void
   syncFromFirestore: (
     authManager: AuthManager,
     firestoreManager: FirestoreManager,
@@ -107,17 +103,6 @@ export function useNotes(): UseNotesReturn {
     []
   )
 
-  const loadNote = useCallback((note: Note, onEditingStart: (id: number) => void): Note => {
-    onEditingStart(note.id)
-    setCurrentEditingId(note.id)
-    return note
-  }, [])
-
-  const resetFlags = useCallback(() => {
-    setCurrentEditingId(null)
-    setHasAutoLoadedLatestNote(false)
-  }, [])
-
   const syncFromFirestore = useCallback(
     async (
       authManager: AuthManager,
@@ -151,14 +136,10 @@ export function useNotes(): UseNotesReturn {
   return {
     notes,
     currentEditingId,
-    hasAutoLoadedLatestNote,
     isSaving,
     saveNote,
     deleteNote,
-    loadNote,
     setCurrentEditingId,
-    setNotes,
-    resetFlags,
     syncFromFirestore,
   }
 }

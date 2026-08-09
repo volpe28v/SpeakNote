@@ -16,9 +16,4 @@ export const UI_STRINGS: UIStrings = {
   TRANSLATION_ERROR: 'Translation error occurred',
   API_NOT_SET:
     'Translation API is not configured. Please check README.md for Google Apps Script setup.',
-  SAVE_NEW: 'Save',
-  SAVE_UPDATE: 'Update',
-  NEW_NOTE: 'New',
-  SAVED_NEW: 'Saved!',
-  UPDATED: 'Updated!',
 }

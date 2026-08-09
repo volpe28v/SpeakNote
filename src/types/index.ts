@@ -7,13 +7,6 @@ export interface Note {
   timestamp: string
 }
 
-export interface User {
-  uid: string
-  displayName: string | null
-  email: string | null
-  photoURL: string | null
-}
-
 export interface FirebaseConfig {
   apiKey: string
   authDomain: string
@@ -44,9 +37,4 @@ export interface UIStrings {
   TRANSLATE: string
   TRANSLATION_ERROR: string
   API_NOT_SET: string
-  SAVE_NEW: string
-  SAVE_UPDATE: string
-  NEW_NOTE: string
-  SAVED_NEW: string
-  UPDATED: string
 }
