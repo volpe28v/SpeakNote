@@ -32,7 +32,7 @@ const speakCurrentLine = (view: EditorView, suffix: string, config: SpeechConfig
 // basicSetup は extensions より先に並ぶため、既定では defaultKeymap のほうが優先度が高い。
 // Prec.highest で包まないと Enter は defaultKeymap に先に処理され、
 // ここの読み上げ・自動翻訳が一度も実行されない。
-export const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
+export const createSpeechKeymap = (onAutoTranslation?: (text: string) => Promise<void>) => {
   return Prec.highest(
     keymap.of([
       {
@@ -50,8 +50,11 @@ export const createSpeechKeymap = (onAutoTranslation?: () => Promise<void>) => {
           if (currentLine.trim()) {
             speakEnglish(currentLine.trim(), false)
             if (onAutoTranslation) {
+              // 改行が入った後の文書をエディタ自身から読んで渡す。
+              // React state を参照すると反映待ちで古い内容を掴むうえ、
+              // 呼び出し側が englishText に依存して毎レンダー再生成される
               setTimeout(() => {
-                onAutoTranslation().catch((error) => {
+                onAutoTranslation(view.state.doc.toString()).catch((error) => {
                   console.error('Auto translation error:', error)
                 })
               }, 100)

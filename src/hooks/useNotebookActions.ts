@@ -115,11 +115,16 @@ export function useNotebookActions({
     scrollJapaneseToBottom()
   }, [handleTranslate, englishText, scrollJapaneseToBottom])
 
-  const handleAutoTranslation = useCallback(async () => {
-    await performAutoTranslation(englishText)
-    // 自動翻訳後、日本語訳エリアを一番下にスクロール
-    scrollJapaneseToBottom()
-  }, [performAutoTranslation, englishText, scrollJapaneseToBottom])
+  // 翻訳対象のテキストはエディタ側から受け取る。englishText に依存させると
+  // 1文字入力するたびに参照が変わり、CodeMirror の extensions が再構成される
+  const handleAutoTranslation = useCallback(
+    async (text: string) => {
+      await performAutoTranslation(text)
+      // 自動翻訳後、日本語訳エリアを一番下にスクロール
+      scrollJapaneseToBottom()
+    },
+    [performAutoTranslation, scrollJapaneseToBottom]
+  )
 
   return {
     handleSave,

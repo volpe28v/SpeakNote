@@ -9,7 +9,7 @@ import { useKeySound } from '@/hooks/useKeySound'
 interface CodeMirrorEditorProps {
   value: string
   onChange: (value: string) => void
-  onAutoTranslation?: () => Promise<void>
+  onAutoTranslation?: (text: string) => Promise<void>
   onSelectionChange?: (selectedText: string, lineNumber: number | null) => void
   highlightedLineIndex?: number | null
   // ハイライト行を画面内にスクロールするか。

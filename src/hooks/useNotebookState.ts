@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 export function useNotebookState() {
   const [englishText, setEnglishText] = useState('')
@@ -6,15 +6,17 @@ export function useNotebookState() {
   const [originalContent, setOriginalContent] = useState('')
   const [currentView, setCurrentView] = useState<'english' | 'japanese'>('english')
 
-  const toggleView = () => {
+  // useCallback で参照を固定する。これらは NotebookContainer から他フックへ渡され、
+  // 毎レンダー変わると下流の useCallback / useMemo の依存を壊す
+  const toggleView = useCallback(() => {
     setCurrentView((prev) => (prev === 'english' ? 'japanese' : 'english'))
-  }
+  }, [])
 
-  const resetState = () => {
+  const resetState = useCallback(() => {
     setEnglishText('')
     setTranslationText('')
     setOriginalContent('')
-  }
+  }, [])
 
   return {
     // 状態

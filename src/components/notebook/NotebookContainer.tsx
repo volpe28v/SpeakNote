@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { UI_STRINGS } from '@/constants/appConstants'
 import { useAutoSave } from '@/hooks/useAutoSave'
@@ -12,6 +12,14 @@ import { useUnsavedChangeTracker } from '@/hooks/useUnsavedChangeTracker'
 import { useTranslationSync } from '@/hooks/useTranslationSync'
 import CodeMirrorEditor from '@/components/common/CodeMirrorEditor'
 import AutoSaveStatus from '@/components/common/AutoSaveStatus'
+import type { AuthManager, FirestoreManager } from '@/lib/firebase'
+
+// style.css の @media (max-width: 768px) と対応させること
+const MOBILE_BREAKPOINT = 768
+
+// 日本語ペインは読み取り専用。インラインの空関数を渡すと参照が毎レンダー変わり、
+// @uiw/react-codemirror が onChange を依存に持つため再構成が走る
+const NOOP = () => {}
 
 interface NotebookContainerProps {
   resetAutoSaveStatusRef: React.MutableRefObject<(() => void) | null>
@@ -35,14 +43,18 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   // カスタムフックの使用
   const notebookState = useNotebookState()
   const highlightState = useHighlightState()
+  // useState の setter は参照が安定している。分割して取り出すことで
+  // 下流の useCallback の依存を安定させる（notebookState 自体は毎レンダー別オブジェクト）
+  const { setEnglishText, setOriginalContent } = notebookState
 
   const containerRef = useRef<HTMLDivElement>(null)
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+  // 遅延初期化。そうしないと window.innerWidth の読み取り（強制リフロー）が毎レンダー走る
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= MOBILE_BREAKPOINT)
 
   // 画面サイズの変更を監視
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768)
+      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT)
     }
 
     window.addEventListener('resize', handleResize)
@@ -50,7 +62,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   }, [])
 
   // 日本語CodeMirrorエディタを最下部にスクロールする関数
-  const scrollJapaneseToBottom = () => {
+  const scrollJapaneseToBottom = useCallback(() => {
     setTimeout(() => {
       // CodeMirrorエディタのスクローラー要素を取得
       const japaneseEditor = document.querySelector(
@@ -60,7 +72,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
         japaneseEditor.scrollTop = japaneseEditor.scrollHeight
       }
     }, 100)
-  }
+  }, [])
 
   // カスタムフックの初期化
   const notebookActions = useNotebookActions({
@@ -98,18 +110,19 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     translationLines,
   })
 
-  // 自動保存機能
-  const { isAutoSaving, lastAutoSavedAt, autoSaveError, resetAutoSaveStatus } = useAutoSave({
-    text: notebookState.englishText,
-    translations: translationLines,
-    originalContent: notebookState.originalContent,
-    authManager,
-    firestoreManager,
-    saveFunction: async (text, translations, authManager, firestoreManager) => {
-      const result = await saveNote(text, translations, authManager, firestoreManager)
+  // 参照を固定する。インラインのままだと useAutoSave のタイマーが毎レンダー張り直され、
+  // 「再レンダーが10秒間起きない」場合しか自動保存が発火しなくなる
+  const handleAutoSave = useCallback(
+    async (
+      text: string,
+      translations: string[],
+      auth: AuthManager,
+      firestore: FirestoreManager
+    ) => {
+      const result = await saveNote(text, translations, auth, firestore)
       if (result) {
         // 自動保存成功時に元のcontentを更新して未保存状態を解消
-        notebookState.setOriginalContent(text)
+        setOriginalContent(text)
         // 新規ノートの場合はIDを設定（履歴の重複を防ぐ）
         if (result.type === 'saved' && result.id) {
           setCurrentEditingId(result.id)
@@ -117,16 +130,30 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       }
       return result
     },
+    [saveNote, setOriginalContent, setCurrentEditingId]
+  )
+
+  // 自動保存機能
+  const { isAutoSaving, lastAutoSavedAt, autoSaveError, resetAutoSaveStatus } = useAutoSave({
+    text: notebookState.englishText,
+    translations: translationLines,
+    originalContent: notebookState.originalContent,
+    authManager,
+    firestoreManager,
+    saveFunction: handleAutoSave,
     intervalMs: 10000, // 10秒間隔
     minCharsForSave: 10,
     enabled: !!user,
   })
 
   // ノート同期処理
-  const handleNoteLoad = (note: { text: string; translations?: string[]; id: number }) => {
-    notebookState.setEnglishText(note.text)
-    notebookState.setOriginalContent(note.text)
-  }
+  const handleNoteLoad = useCallback(
+    (note: { text: string; translations?: string[]; id: number }) => {
+      setEnglishText(note.text)
+      setOriginalContent(note.text)
+    },
+    [setEnglishText, setOriginalContent]
+  )
 
   useNoteSync({
     user,
@@ -251,7 +278,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
           <div id="translation-area">
             <CodeMirrorEditor
               value={notebookState.translationText}
-              onChange={() => {}} // 読み取り専用
+              onChange={NOOP} // 読み取り専用
               onSelectionChange={selectionHandlers.handleJapaneseSelection}
               highlightedLineIndex={highlightState.highlightedLineIndex}
               scrollHighlightIntoView={highlightState.highlightSource === 'english'}
