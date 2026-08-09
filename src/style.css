@@ -448,22 +448,6 @@ h1 {
   }
 }
 
-/* 選択部分読み上げボタンのアニメーション */
-#speak-selection-button {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 #input-area {
   width: 100%;
   flex: 1;
@@ -478,48 +462,6 @@ h1 {
   flex: 1;
   display: flex;
   flex-direction: column;
-}
-
-#translation-text {
-  width: 100%;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin-bottom: 15px;
-  font-size: 22px;
-  line-height: 1.6; /* 自然な行間 */
-  color: #555;
-  font-style: normal;
-  resize: none;
-  flex: 1;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans',
-    'Yu Gothic Medium', 'Meiryo', sans-serif;
-  cursor: default;
-  font-weight: 400;
-  outline: none;
-  letter-spacing: 0.5px;
-}
-
-#english-input {
-  width: 100%;
-  padding: 0;
-  font-size: 22px;
-  border: none;
-  outline: none;
-  font-family: 'Georgia', 'Times New Roman', serif;
-  resize: none;
-  flex: 1;
-  line-height: 1.6; /* 自然な行間 */
-  color: #2c3e50;
-  background: transparent;
-  letter-spacing: 0.3px;
-  font-weight: 500;
-}
-
-#english-input::placeholder {
-  color: rgba(44, 62, 80, 0.4);
-  font-style: italic;
 }
 
 .button-group {
@@ -560,8 +502,7 @@ h1 {
 #translate-button,
 #save-button,
 #speak-japanese-button,
-#clear-button,
-#speak-selection-button {
+#clear-button {
   padding: 14px 24px;
   font-size: 16px;
   color: white;
@@ -621,16 +562,6 @@ h1 {
   box-shadow: 0 4px 20px rgba(120, 113, 108, 0.2);
 }
 
-#speak-selection-button {
-  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-}
-
-#speak-selection-button:hover {
-  background: linear-gradient(135deg, #5a6271 0%, #374151 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(107, 114, 128, 0.2);
-}
-
 #save-button {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
 }
@@ -655,8 +586,7 @@ h1 {
 #translate-button:active,
 #save-button:active,
 #speak-japanese-button:active,
-#clear-button:active,
-#speak-selection-button:active {
+#clear-button:active {
   transform: translateY(0px);
 }
 
@@ -914,10 +844,6 @@ h1 {
     font-size: 14px !important;
   }
 
-  #notebook-container.mobile-view #translation-text {
-    font-size: 14px;
-  }
-
   .header {
     margin-bottom: 2px;
     padding: 2px 10px;
@@ -1005,12 +931,6 @@ h1 {
     overflow: visible;
   }
 
-  #english-input,
-  #translation-text {
-    font-size: 22px;
-    line-height: 1.5; /* モバイル用の自然な行間 */
-  }
-
   .notebook-side h2 {
     font-size: 1.6rem;
     margin-top: 0;
@@ -1028,12 +948,6 @@ h1 {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
-  }
-
-  .sentence-actions {
-    margin-left: 0;
-    align-self: stretch;
-    justify-content: center;
   }
 }
 
@@ -1093,13 +1007,6 @@ h1 {
     flex: 1;
     display: flex;
     flex-direction: column;
-  }
-
-  #notebook-container.mobile-view #translation-text {
-    flex: 1;
-    min-height: 100px;
-    max-height: none;
-    padding-bottom: calc(120px + env(safe-area-inset-bottom));
   }
 
   #notebook-container.mobile-view #japanese-side .button-group {
@@ -1193,12 +1100,6 @@ h1 {
     max-height: 200px !important;
   }
 
-  #notebook-container:not(.mobile-view) #translation-text {
-    min-height: 120px;
-    max-height: 200px;
-    font-size: 16px;
-  }
-
   .button-group {
     gap: 5px;
     margin-top: 8px;
@@ -1208,29 +1109,6 @@ h1 {
     padding: 8px 12px;
     font-size: 13px;
     min-width: auto;
-  }
-
-  /* ノートリストの調整 */
-  .notes-list-container {
-    padding: 8px;
-  }
-
-  .note-item {
-    padding: 10px;
-    margin-bottom: 8px;
-  }
-
-  .note-item h3 {
-    font-size: 14px;
-  }
-
-  .note-item p {
-    font-size: 12px;
-  }
-
-  .note-actions button {
-    padding: 6px 10px;
-    font-size: 12px;
   }
 
   /* Index画面のボタンをモバイルでも常時表示 */
@@ -1414,7 +1292,6 @@ h1 {
   border-radius: 12px;
 }
 
-.disabled-overlay textarea,
 .disabled-overlay button {
   pointer-events: none;
   opacity: 0.5;
