@@ -67,16 +67,20 @@ export function useNoteSync({
   const applyNoteRef = useRef(applyNote)
   applyNoteRef.current = applyNote
 
+  // 依存にはオブジェクトではなく真偽値を使う。user の参照が毎レンダー変わる実装に
+  // なった瞬間に同期が無限ループするため、識別子の同一性に依存させない
+  const isLoggedIn = Boolean(user)
+
   // ログイン状態が確定したときに一度だけクラウドと同期する
   useEffect(() => {
-    if (!user || !authManager || !firestoreManager) {
+    if (!isLoggedIn || !authManager || !firestoreManager) {
       return
     }
 
     handlersRef.current.syncFromFirestore(authManager, firestoreManager, (note) => {
       applyNoteRef.current(note, false)
     })
-  }, [user, authManager, firestoreManager])
+  }, [isLoggedIn, authManager, firestoreManager])
 
   // ノート選択イベントの処理
   useEffect(() => {
