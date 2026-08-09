@@ -1,8 +1,8 @@
 // アプリケーション設定値と定数
 import type { UIStrings } from '@/types'
 
-// アプリケーションのバージョン
-export const APP_VERSION = '1.3.0'
+// アプリケーションのバージョン（package.json の version と揃えること）
+export const APP_VERSION = '1.4.0'
 
 // Google Apps Script translation API URL
 export const GAS_TRANSLATE_URL =
