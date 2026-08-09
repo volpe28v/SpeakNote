@@ -2,7 +2,7 @@ import React from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { EditorView, Decoration } from '@codemirror/view'
 import { EditorState, Extension } from '@codemirror/state'
-import { spellCheckField, initSpellCheck, setUpdateCallback } from '@/lib/spellcheck'
+import { spellCheckField, initSpellCheck, addDictionaryListener } from '@/lib/spellcheck'
 import { createSpeechKeymap } from '@/lib/codeMirrorKeymap'
 import { useKeySound } from '@/hooks/useKeySound'
 
@@ -133,14 +133,16 @@ function CodeMirrorEditor({
 
   // スペルチェック辞書を初期化
   React.useEffect(() => {
-    // 辞書が読み込まれたらエディタを更新
-    setUpdateCallback(() => {
+    // 辞書が読み込まれたらエディタを更新。
+    // アンマウント後に破棄済みの EditorView へ dispatch しないよう登録を解除する
+    const unsubscribe = addDictionaryListener(() => {
       if (editorViewRef.current) {
         // エディタの状態を強制的に更新
         editorViewRef.current.dispatch({})
       }
     })
     initSpellCheck()
+    return unsubscribe
   }, [])
 
   const extensions = React.useMemo(() => {
