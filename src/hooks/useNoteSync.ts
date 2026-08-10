@@ -14,7 +14,6 @@ interface UseNoteSyncProps {
   loadTranslations: (englishText: string, translations: string[]) => void
   clearTranslationLines: () => void
   setCurrentEditingId: (id: number | null) => void
-  markAsSaved: () => void
   onNoteLoad: (note: Note) => void
 }
 
@@ -26,7 +25,6 @@ export function useNoteSync({
   loadTranslations,
   clearTranslationLines,
   setCurrentEditingId,
-  markAsSaved,
   onNoteLoad,
 }: UseNoteSyncProps) {
   // コールバック類は呼び出し側で毎レンダー再生成されるため、effect の依存には含めない。
@@ -37,7 +35,6 @@ export function useNoteSync({
     loadTranslations,
     clearTranslationLines,
     setCurrentEditingId,
-    markAsSaved,
     onNoteLoad,
   })
 
@@ -47,7 +44,6 @@ export function useNoteSync({
       loadTranslations,
       clearTranslationLines,
       setCurrentEditingId,
-      markAsSaved,
       onNoteLoad,
     }
   })
@@ -62,7 +58,6 @@ export function useNoteSync({
       handlers.clearTranslationLines()
     }
     handlers.setCurrentEditingId(note.id)
-    handlers.markAsSaved()
   }
   const applyNoteRef = useRef(applyNote)
   applyNoteRef.current = applyNote

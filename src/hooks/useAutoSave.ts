@@ -4,7 +4,7 @@ import { AuthManager, FirestoreManager } from '@/lib/firebase'
 interface UseAutoSaveOptions {
   text: string
   translations: string[]
-  originalContent: string
+  savedText: string
   authManager: AuthManager | null
   firestoreManager: FirestoreManager | null
   saveFunction: (
@@ -28,7 +28,7 @@ interface AutoSaveState {
 export function useAutoSave({
   text,
   translations,
-  originalContent,
+  savedText,
   authManager,
   firestoreManager,
   saveFunction,
@@ -56,7 +56,7 @@ export function useAutoSave({
     if (
       currentText.length < minCharsForSave ||
       currentText === lastSavedContentRef.current ||
-      currentText === originalContent.trim()
+      currentText === savedText.trim()
     ) {
       return
     }
@@ -80,7 +80,7 @@ export function useAutoSave({
   }, [
     text,
     translations,
-    originalContent,
+    savedText,
     authManager,
     firestoreManager,
     saveFunction,
@@ -106,7 +106,7 @@ export function useAutoSave({
   useEffect(() => {
     const currentText = text.trim()
     const hasChanges =
-      currentText !== originalContent.trim() && currentText !== lastSavedContentRef.current
+      currentText !== savedText.trim() && currentText !== lastSavedContentRef.current
 
     if (hasChanges && currentText.length >= minCharsForSave) {
       hasUnsavedChangesRef.current = true
@@ -118,7 +118,7 @@ export function useAutoSave({
         timeoutRef.current = null
       }
     }
-  }, [text, originalContent, minCharsForSave, resetTimer])
+  }, [text, savedText, minCharsForSave, resetTimer])
 
   // フォーカス離脱時の自動保存
   useEffect(() => {

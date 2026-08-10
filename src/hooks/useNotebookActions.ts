@@ -6,9 +6,9 @@ import type { Note, SaveResult } from '@/types'
 interface UseNotebookActionsProps {
   englishText: string
   translationLines: string[]
-  setOriginalContent: (content: string) => void
+  markSaved: (text: string) => void
   clearAllSelections: () => void
-  resetState: () => void
+  startNewNote: () => void
   scrollJapaneseToBottom: () => void
   authManager: AuthManager | null
   firestoreManager: FirestoreManager | null
@@ -27,17 +27,16 @@ interface UseNotebookActionsProps {
     firestoreManager: FirestoreManager,
     callback?: (note: Note) => void
   ) => Promise<void>
-  hasUnsavedChanges: boolean
-  markAsSaved: () => void
+  isDirty: boolean
   clearTranslationLines: () => void
 }
 
 export function useNotebookActions({
   englishText,
   translationLines,
-  setOriginalContent,
+  markSaved,
   clearAllSelections,
-  resetState,
+  startNewNote,
   scrollJapaneseToBottom,
   authManager,
   firestoreManager,
@@ -47,8 +46,7 @@ export function useNotebookActions({
   saveNote,
   setCurrentEditingId,
   syncFromFirestore,
-  hasUnsavedChanges,
-  markAsSaved,
+  isDirty,
   clearTranslationLines,
 }: UseNotebookActionsProps) {
   const handleSave = useCallback(async () => {
@@ -65,9 +63,8 @@ export function useNotebookActions({
       } else if (result.type === 'updated') {
         deferredToast.success('Note updated successfully!')
       }
-      // 保存後は元のコンテンツを更新して未保存状態をリセット
-      setOriginalContent(englishText.trim())
-      markAsSaved()
+      // 保存後は保存済みの内容を更新して未保存状態を解消する
+      markSaved(englishText)
       // 保存後はリスト更新のために再同期（自動読み込みは無し）
       syncFromFirestore(authManager, firestoreManager)
     }
@@ -78,14 +75,13 @@ export function useNotebookActions({
     translationLines,
     saveNote,
     setCurrentEditingId,
-    setOriginalContent,
-    markAsSaved,
+    markSaved,
     syncFromFirestore,
   ])
 
   const handleClear = useCallback(() => {
     // 未保存の変更がある場合は確認
-    if (hasUnsavedChanges) {
+    if (isDirty) {
       if (
         !confirm('There are unsaved changes. Do you want to discard them and create a new note?')
       ) {
@@ -93,21 +89,11 @@ export function useNotebookActions({
       }
     }
 
-    resetState()
+    startNewNote()
     clearTranslationLines() // 日本語翻訳もクリア
     setCurrentEditingId(null)
-    setOriginalContent('')
     clearAllSelections()
-    markAsSaved()
-  }, [
-    hasUnsavedChanges,
-    resetState,
-    clearTranslationLines,
-    setCurrentEditingId,
-    setOriginalContent,
-    clearAllSelections,
-    markAsSaved,
-  ])
+  }, [isDirty, startNewNote, clearTranslationLines, setCurrentEditingId, clearAllSelections])
 
   const handleTranslateClick = useCallback(async () => {
     await handleTranslate(englishText)

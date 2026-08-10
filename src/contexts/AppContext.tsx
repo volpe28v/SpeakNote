@@ -2,14 +2,15 @@ import { createContext, useContext, ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useNotes } from '@/hooks/useNotes'
-import { useUnsavedChanges } from '@/hooks/useUnsavedChanges'
+import { useNoteSession, type NoteSession } from '@/hooks/useNoteSession'
 import { useQuickTranslation } from '@/hooks/useQuickTranslation'
 
 interface AppContextType {
   auth: ReturnType<typeof useAuth>
   translation: ReturnType<typeof useTranslation>
   notes: ReturnType<typeof useNotes>
-  unsavedChanges: ReturnType<typeof useUnsavedChanges>
+  /** 編集中のノートの状態。NotesList からも参照するため Context に置く */
+  session: NoteSession
   quickTranslation: ReturnType<typeof useQuickTranslation>
 }
 
@@ -19,11 +20,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const auth = useAuth()
   const translation = useTranslation()
   const notes = useNotes()
-  const unsavedChanges = useUnsavedChanges()
+  const session = useNoteSession()
   const quickTranslation = useQuickTranslation()
 
   return (
-    <AppContext.Provider value={{ auth, translation, notes, unsavedChanges, quickTranslation }}>
+    <AppContext.Provider value={{ auth, translation, notes, session, quickTranslation }}>
       {children}
     </AppContext.Provider>
   )

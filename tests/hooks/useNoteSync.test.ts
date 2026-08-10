@@ -26,7 +26,6 @@ const createProps = (syncFromFirestore: ReturnType<typeof vi.fn>) => ({
   loadTranslations: vi.fn(),
   clearTranslationLines: vi.fn(),
   setCurrentEditingId: vi.fn(),
-  markAsSaved: vi.fn(),
   onNoteLoad: vi.fn(),
 })
 
@@ -84,7 +83,6 @@ describe('useNoteSync', () => {
     expect(latestOnNoteLoad).toHaveBeenCalledWith(NOTE)
     expect(props.loadTranslations).toHaveBeenCalledWith(NOTE.text, NOTE.translations)
     expect(props.setCurrentEditingId).toHaveBeenCalledWith(NOTE.id)
-    expect(props.markAsSaved).toHaveBeenCalled()
   })
 
   it('訳文を持たないノートでは訳文をクリアする', () => {

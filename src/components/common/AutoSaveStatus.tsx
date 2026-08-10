@@ -2,14 +2,14 @@ interface AutoSaveStatusProps {
   isAutoSaving: boolean
   lastAutoSavedAt: Date | null
   autoSaveError: string | null
-  hasUnsavedChanges: boolean
+  isDirty: boolean
 }
 
 function AutoSaveStatus({
   isAutoSaving,
   lastAutoSavedAt,
   autoSaveError,
-  hasUnsavedChanges,
+  isDirty,
 }: AutoSaveStatusProps) {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('ja-JP', {
@@ -38,7 +38,7 @@ function AutoSaveStatus({
   }
 
   // 未保存状態は表示しない（うるさいため）
-  if (hasUnsavedChanges) {
+  if (isDirty) {
     return null
   }
 

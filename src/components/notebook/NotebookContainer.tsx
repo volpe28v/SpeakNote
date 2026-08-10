@@ -8,7 +8,6 @@ import { useNotebookActions } from '@/hooks/useNotebookActions'
 import { useSelectionHandlers } from '@/hooks/useSelectionHandlers'
 import { useSpeechHandlers } from '@/hooks/useSpeechHandlers'
 import { useNoteSync } from '@/hooks/useNoteSync'
-import { useUnsavedChangeTracker } from '@/hooks/useUnsavedChangeTracker'
 import CodeMirrorEditor from '@/components/common/CodeMirrorEditor'
 import AutoSaveStatus from '@/components/common/AutoSaveStatus'
 import type { AuthManager, FirestoreManager } from '@/lib/firebase'
@@ -25,7 +24,7 @@ interface NotebookContainerProps {
 }
 
 function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
-  const { auth, translation, notes, unsavedChanges } = useApp()
+  const { auth, translation, notes, session } = useApp()
   const { user, authManager, firestoreManager } = auth
   const {
     translationLines,
@@ -37,14 +36,11 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     performAutoTranslation,
   } = translation
   const { isSaving, saveNote, setCurrentEditingId, syncFromFirestore } = notes
-  const { hasUnsavedChanges, markAsSaved, markAsModified } = unsavedChanges
+  const { englishText, isDirty, setEnglishText, openNote, startNewNote, markSaved } = session
 
   // カスタムフックの使用
   const notebookState = useNotebookState()
   const highlightState = useHighlightState()
-  // useState の setter は参照が安定している。分割して取り出すことで
-  // 下流の useCallback の依存を安定させる（notebookState 自体は毎レンダー別オブジェクト）
-  const { setEnglishText, setOriginalContent } = notebookState
 
   const containerRef = useRef<HTMLDivElement>(null)
   // 遅延初期化。そうしないと window.innerWidth の読み取り（強制リフロー）が毎レンダー走る
@@ -75,11 +71,11 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
 
   // カスタムフックの初期化
   const notebookActions = useNotebookActions({
-    englishText: notebookState.englishText,
+    englishText,
     translationLines,
-    setOriginalContent: notebookState.setOriginalContent,
+    markSaved,
     clearAllSelections: highlightState.clearAllSelections,
-    resetState: notebookState.resetState,
+    startNewNote,
     scrollJapaneseToBottom,
     authManager,
     firestoreManager,
@@ -89,8 +85,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     saveNote,
     setCurrentEditingId,
     syncFromFirestore,
-    hasUnsavedChanges,
-    markAsSaved,
+    isDirty,
     clearTranslationLines,
   })
 
@@ -105,7 +100,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   })
 
   const speechHandlers = useSpeechHandlers({
-    englishText: notebookState.englishText,
+    englishText,
     translationText,
     selectedText: highlightState.selectedText,
     selectedEnglishText: highlightState.selectedEnglishText,
@@ -125,7 +120,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       const result = await saveNote(text, translations, auth, firestore)
       if (result) {
         // 自動保存成功時に元のcontentを更新して未保存状態を解消
-        setOriginalContent(text)
+        markSaved(text)
         // 新規ノートの場合はIDを設定（履歴の重複を防ぐ）
         if (result.type === 'saved' && result.id) {
           setCurrentEditingId(result.id)
@@ -133,14 +128,14 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
       }
       return result
     },
-    [saveNote, setOriginalContent, setCurrentEditingId]
+    [saveNote, markSaved, setCurrentEditingId]
   )
 
   // 自動保存機能
   const { isAutoSaving, lastAutoSavedAt, autoSaveError, resetAutoSaveStatus } = useAutoSave({
-    text: notebookState.englishText,
+    text: englishText,
     translations: translationLines,
-    originalContent: notebookState.originalContent,
+    savedText: session.savedText,
     authManager,
     firestoreManager,
     saveFunction: handleAutoSave,
@@ -148,15 +143,6 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     minCharsForSave: 10,
     enabled: !!user,
   })
-
-  // ノート同期処理
-  const handleNoteLoad = useCallback(
-    (note: { text: string; translations?: string[]; id: number }) => {
-      setEnglishText(note.text)
-      setOriginalContent(note.text)
-    },
-    [setEnglishText, setOriginalContent]
-  )
 
   useNoteSync({
     user,
@@ -166,19 +152,9 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     loadTranslations,
     clearTranslationLines,
     setCurrentEditingId,
-    markAsSaved,
-    onNoteLoad: handleNoteLoad,
+    onNoteLoad: openNote,
   })
 
-  // 未保存変更の追跡
-  useUnsavedChangeTracker({
-    englishText: notebookState.englishText,
-    originalContent: notebookState.originalContent,
-    markAsModified,
-    markAsSaved,
-  })
-
-  // 翻訳同期処理
   // 親（App）からタブ切り替え時に自動保存ステータスを消せるようにする
   useEffect(() => {
     resetAutoSaveStatusRef.current = resetAutoSaveStatus
@@ -215,24 +191,22 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
           <div className="english-header">
             <h2>
               English
-              {hasUnsavedChanges && !isAutoSaving && <span className="unsaved-indicator">●</span>}
+              {isDirty && !isAutoSaving && <span className="unsaved-indicator">●</span>}
             </h2>
-            <span className="char-count">
-              {notebookState.englishText.length.toLocaleString()} chars
-            </span>
+            <span className="char-count">{englishText.length.toLocaleString()} chars</span>
             {user && (
               <AutoSaveStatus
                 isAutoSaving={isAutoSaving}
                 lastAutoSavedAt={lastAutoSavedAt}
                 autoSaveError={autoSaveError}
-                hasUnsavedChanges={hasUnsavedChanges}
+                isDirty={isDirty}
               />
             )}
           </div>
           <div id="input-area">
             <CodeMirrorEditor
-              value={notebookState.englishText}
-              onChange={notebookState.setEnglishText}
+              value={englishText}
+              onChange={setEnglishText}
               onAutoTranslation={notebookActions.handleAutoTranslation}
               onSelectionChange={selectionHandlers.handleEnglishSelection}
               highlightedLineIndex={highlightState.highlightedLineIndex}
@@ -245,14 +219,14 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               <button
                 id="speak-button"
                 onClick={speechHandlers.handleSpeakEnglish}
-                disabled={disabled || !notebookState.englishText.trim()}
+                disabled={disabled || !englishText.trim()}
               >
                 Speak
               </button>
               <button
                 id="save-button"
                 onClick={notebookActions.handleSave}
-                disabled={disabled || !notebookState.englishText.trim() || notebookActions.isSaving}
+                disabled={disabled || !englishText.trim() || notebookActions.isSaving}
               >
                 {notebookActions.isSaving ? 'Saving...' : 'Save'}
               </button>
@@ -298,7 +272,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               <button
                 id="translate-button"
                 onClick={notebookActions.handleTranslateClick}
-                disabled={disabled || !notebookState.englishText.trim() || isTranslating}
+                disabled={disabled || !englishText.trim() || isTranslating}
               >
                 {translateButtonLabel}
               </button>

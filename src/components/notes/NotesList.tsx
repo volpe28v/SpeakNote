@@ -6,18 +6,18 @@ import type { Note } from '@/types'
 import QuickTranslationPractice from '@/components/practice/QuickTranslationPractice'
 
 function NotesList() {
-  const { auth, translation, notes, unsavedChanges, quickTranslation } = useApp()
+  const { auth, translation, notes, session, quickTranslation } = useApp()
   const { user, authManager, firestoreManager } = auth
   const { loadTranslations } = translation
   const { notes: notesList, currentEditingId, deleteNote, setCurrentEditingId } = notes
-  const { hasUnsavedChanges } = unsavedChanges
+  const { isDirty } = session
   const { isPracticing, practiceNote, startPractice, stopPractice } = quickTranslation
 
   // NotebookContainerで既に同期されるため、こちらでは個別の同期処理は不要
 
   const handleNoteClick = (note: Note) => {
     // 未保存の変更がある場合は確認
-    if (hasUnsavedChanges) {
+    if (isDirty) {
       if (!confirm('There are unsaved changes. Do you want to discard them and load this note?')) {
         return
       }
