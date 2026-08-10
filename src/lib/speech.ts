@@ -174,3 +174,60 @@ export function speakText(
 export function stopSpeech(): void {
   window.speechSynthesis.cancel()
 }
+
+// 発話が始まったかを確認するまでの待ち時間
+const SPEECH_START_CHECK_MS = 500
+// 発話が終わらない場合に諦めるまでの基本時間と、1文字あたりの加算
+const SPEECH_TIMEOUT_BASE_MS = 3000
+const SPEECH_TIMEOUT_PER_CHAR_MS = 200
+
+/**
+ * 読み上げを開始し、完了・失敗・タイムアウトのいずれか最初の1回だけ onDone を呼ぶ。
+ *
+ * speechSynthesis は環境によって onend も onerror も発火しないことがある。
+ * 特に iOS Safari では発話エンジンが固まり、ブラウザを再起動するまで
+ * 発話も完了通知も返らない状態に陥ることが実際に確認されている。
+ * 完了通知だけを頼りに進む処理はそこで永久に止まるため、必ず脱出できるようにする。
+ *
+ * @param text 読み上げる文
+ * @param language 言語
+ * @param onDone 読み上げが終わった（または進めてよい）ときに1回だけ呼ばれる
+ * @returns 進行を打ち切る関数。以後 onDone は呼ばれない
+ */
+export function speakWithFallback(
+  text: string,
+  language: SpeechLanguage,
+  onDone: () => void
+): () => void {
+  let finished = false
+  const timers: ReturnType<typeof setTimeout>[] = []
+
+  const clearTimers = () => timers.forEach(clearTimeout)
+
+  const finish = () => {
+    if (finished) return
+    finished = true
+    clearTimers()
+    onDone()
+  }
+
+  // 発話が始まらなかった場合はすぐ次へ進む。長いタイムアウトだけに頼ると
+  // 音が出ない環境で毎回長時間待たされる
+  timers.push(
+    setTimeout(() => {
+      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+        finish()
+      }
+    }, SPEECH_START_CHECK_MS)
+  )
+
+  // 発話は始まったが終了通知が来ない場合の最終的な保険
+  timers.push(setTimeout(finish, SPEECH_TIMEOUT_BASE_MS + text.length * SPEECH_TIMEOUT_PER_CHAR_MS))
+
+  speakText(text, language, finish, finish)
+
+  return () => {
+    finished = true
+    clearTimers()
+  }
+}

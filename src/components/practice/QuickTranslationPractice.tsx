@@ -7,7 +7,7 @@ import {
   INFINITE_THINKING_TIME,
 } from '@/constants/practiceConstants'
 import { extractValidPairs } from '@/utils/textUtils'
-import { speakText, stopSpeech } from '@/lib/speech'
+import { speakWithFallback, stopSpeech } from '@/lib/speech'
 import './QuickTranslationPractice.css'
 
 interface QuickTranslationPracticeProps {
@@ -97,6 +97,8 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
     // 走った後に、キャンセル済みの読み上げの onend が遅れて発火して次フェーズを
     // 進めてしまうのを防ぐ（speechSynthesis.cancel() は onend を呼ぶ）
     let cancelled = false
+    // 進行中の読み上げを打ち切るための関数
+    let cancelSpeech: (() => void) | null = null
 
     const advance = (delayMs: number, action: () => void) => {
       if (cancelled) return
@@ -131,8 +133,9 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
           // 日本語を読み上げ
           const japaneseText = currentPair?.japanese
           if (japaneseText && japaneseText.trim()) {
-            const handleSpeechEnd = () => advance(PRACTICE_TIMEOUTS.PHASE_TRANSITION, goToThinking)
-            speakText(japaneseText, 'japanese', handleSpeechEnd, handleSpeechEnd)
+            cancelSpeech = speakWithFallback(japaneseText, 'japanese', () =>
+              advance(PRACTICE_TIMEOUTS.PHASE_TRANSITION, goToThinking)
+            )
           } else {
             // テキストがない場合は即座に次へ
             advance(PRACTICE_TIMEOUTS.QUICK_TRANSITION, goToThinking)
@@ -167,9 +170,9 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
           // 英語を読み上げ
           const englishText = currentPair?.english
           if (englishText && englishText.trim()) {
-            const handleNextPhase = () =>
+            cancelSpeech = speakWithFallback(englishText, 'english', () =>
               goToNextRepeatOrPause(PRACTICE_TIMEOUTS.ENGLISH_REPEAT_INTERVAL)
-            speakText(englishText, 'english', handleNextPhase, handleNextPhase)
+            )
           } else {
             // テキストがない場合は即座に次へ
             goToNextRepeatOrPause(PRACTICE_TIMEOUTS.QUICK_TRANSITION)
@@ -196,6 +199,7 @@ const QuickTranslationPractice: React.FC<QuickTranslationPracticeProps> = ({ not
     return () => {
       cancelled = true
       clearTimeout(startTimer)
+      cancelSpeech?.()
       clearTimers()
       stopSpeech()
     }
