@@ -2,7 +2,7 @@
 import type { UIStrings } from '@/types'
 
 // アプリケーションのバージョン（package.json の version と揃えること）
-export const APP_VERSION = '1.4.0'
+export const APP_VERSION = '1.4.1'
 
 // Google Apps Script translation API URL
 export const GAS_TRANSLATE_URL =
