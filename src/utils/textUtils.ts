@@ -13,6 +13,17 @@ export const removeEmojis = (text: string): string => {
   )
 }
 
+// ひらがな・カタカナ・漢字・半角カナ。ローマ字だけの行と区別できればよいので、
+// 記号や句読点は含めない
+const JAPANESE_PATTERN = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff66-\uff9f]/
+
+/**
+ * 日本語の文字を含むテキストか判定する
+ * @param text 判定対象のテキスト
+ * @returns ひらがな・カタカナ・漢字のいずれかを含む場合true
+ */
+export const containsJapanese = (text: string): boolean => JAPANESE_PATTERN.test(text)
+
 /**
  * 日付パターンの定義
  */

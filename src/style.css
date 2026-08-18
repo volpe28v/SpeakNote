@@ -498,6 +498,50 @@ h1 {
   margin-left: 15px;
 }
 
+/* Japaneseヘッダーと英語率スライダーのレイアウト */
+.japanese-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.japanese-header h2 {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 日本語ペインに英文行を混ぜる割合のスライダー */
+.mix-ratio-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 15px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* 桁数が変わってもスライダーの位置が動かないよう幅を固定する */
+.mix-ratio-control .mix-ratio-label {
+  min-width: 5.5em;
+  text-align: right;
+  color: #7f8c8d;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mix-ratio-control input[type='range'] {
+  width: 110px;
+  accent-color: #3498db;
+  cursor: pointer;
+}
+
+.mix-ratio-control input[type='range']:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 #speak-button,
 #translate-button,
 #save-button,
@@ -962,6 +1006,12 @@ h1 {
   #notebook-container.mobile-view .english-header,
   #notebook-container.mobile-view #japanese-side h2 {
     display: none;
+  }
+
+  /* 見出しが消えてもスライダーは操作できるように残す */
+  #notebook-container.mobile-view .japanese-header {
+    justify-content: flex-end;
+    margin-bottom: 8px;
   }
 
   /* 英語エリアのレイアウト調整 */

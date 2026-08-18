@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { speakEnglish, speakJapanese } from '@/lib/speech'
+import { containsJapanese } from '@/utils/textUtils'
 
 interface UseSpeechHandlersProps {
   englishText: string
@@ -65,9 +66,26 @@ export function useSpeechHandlers({
   }, [selectedEnglishText, selectedText, highlightedLineIndex, englishText])
 
   const handleSpeakJapanese = useCallback(() => {
-    // 1. 日本語テキストが選択されている場合
+    // 1. 日本語ペインでテキストが選択されている場合
     if (selectedText) {
-      speakJapanese(selectedText)
+      if (containsJapanese(selectedText)) {
+        speakJapanese(selectedText)
+        return
+      }
+
+      // 英語率を上げると日本語ペインにも英文行が並ぶ。日本語側のボタンなので、
+      // 英文を選んだときはその行の訳文を読み上げて意味を確かめられるようにする
+      const translation =
+        highlightedLineIndex !== null && highlightedLineIndex >= 0
+          ? translationLines[highlightedLineIndex]
+          : undefined
+      if (translation?.trim()) {
+        speakJapanese(translation.trim())
+        return
+      }
+
+      // 訳が無い行は日本語の音声で読ませず、英語として読む
+      speakEnglish(selectedText)
       return
     }
 

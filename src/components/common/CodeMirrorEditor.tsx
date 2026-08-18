@@ -1,10 +1,11 @@
 import React from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { EditorView, Decoration } from '@codemirror/view'
-import { EditorState, Extension } from '@codemirror/state'
+import { EditorView, Decoration, WidgetType, type DecorationSet } from '@codemirror/view'
+import { EditorState, Extension, StateField } from '@codemirror/state'
 import { spellCheckField, initSpellCheck, addDictionaryListener } from '@/lib/spellcheck'
 import { createSpeechKeymap } from '@/lib/codeMirrorKeymap'
 import { useKeySound } from '@/hooks/useKeySound'
+import type { HintLanguage } from '@/utils/mixedReading'
 
 interface CodeMirrorEditorProps {
   value: string
@@ -12,6 +13,12 @@ interface CodeMirrorEditorProps {
   onAutoTranslation?: (text: string) => Promise<void>
   onSelectionChange?: (selectedText: string, lineNumber: number | null) => void
   highlightedLineIndex?: number | null
+  // ヒントを添える行。null なら表示しない
+  hintLineIndex?: number | null
+  // hintLineIndex の行の下に薄く表示するテキスト
+  hintText?: string
+  // ヒントの言語。書体を英文用と日本語用で切り替える
+  hintLang?: HintLanguage
   // ハイライト行を画面内にスクロールするか。
   // カーソルのある側で有効にすると入力のたびに画面が跳ねるため、反対側だけ有効にする
   scrollHighlightIntoView?: boolean
@@ -41,6 +48,55 @@ const createHighlightExtension = (lineIndex: number | null): Extension => {
     }
 
     return Decoration.set(decorations)
+  })
+}
+
+// 選択された行の下に、反対の言語を薄く添えるウィジェット。
+// 意味の分からない行だけを確認するためのもので、同時に出るのは常に1行
+class LineHintWidget extends WidgetType {
+  constructor(
+    readonly text: string,
+    readonly lang: HintLanguage
+  ) {
+    super()
+  }
+
+  eq(other: LineHintWidget): boolean {
+    return other.text === this.text && other.lang === this.lang
+  }
+
+  toDOM(): HTMLElement {
+    const hint = document.createElement('div')
+    hint.className = `cm-line-hint cm-line-hint-${this.lang}`
+    hint.textContent = this.text
+    return hint
+  }
+}
+
+// 縦のレイアウトを変えるブロックウィジェットは、CodeMirror の制約により
+// EditorView.decorations へ関数を渡す形では提供できない。StateField 経由で渡す
+const createLineHintExtension = (
+  lineIndex: number,
+  text: string,
+  lang: HintLanguage
+): Extension => {
+  const build = (state: EditorState): DecorationSet => {
+    if (lineIndex < 0 || lineIndex >= state.doc.lines) return Decoration.none
+
+    const line = state.doc.line(lineIndex + 1) // CodeMirrorは1ベース
+    return Decoration.set([
+      Decoration.widget({
+        widget: new LineHintWidget(text, lang),
+        block: true,
+        side: 1, // 行の後ろに置く
+      }).range(line.to),
+    ])
+  }
+
+  return StateField.define<DecorationSet>({
+    create: build,
+    update: (value, transaction) => (transaction.docChanged ? build(transaction.state) : value),
+    provide: (field) => EditorView.decorations.from(field),
   })
 }
 
@@ -93,6 +149,22 @@ const noteTheme = EditorView.theme({
     background: 'transparent',
     border: 'none !important',
   },
+  '.cm-line-hint': {
+    color: '#95a5a6',
+    fontSize: '15px',
+    lineHeight: '1.5',
+    paddingLeft: '1.2em',
+    paddingBottom: '4px',
+    letterSpacing: '0.2px',
+  },
+  '.cm-line-hint-japanese': {
+    fontFamily: "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif",
+  },
+  // 本文の英文と同じ等幅書体にして、綴りを目で追いやすくする
+  '.cm-line-hint-english': {
+    fontFamily:
+      "'Roboto Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Source Code Pro', monospace",
+  },
   '.cm-highlighted-line': {
     backgroundColor: '#fff3cd !important',
     borderRadius: '3px',
@@ -123,6 +195,9 @@ function CodeMirrorEditor({
   onAutoTranslation,
   onSelectionChange,
   highlightedLineIndex,
+  hintLineIndex,
+  hintText,
+  hintLang = 'japanese',
   scrollHighlightIntoView = true,
   placeholder = '',
   disabled = false,
@@ -185,8 +260,22 @@ function CodeMirrorEditor({
       baseExtensions.push(createHighlightExtension(highlightedLineIndex))
     }
 
+    // 行ヒントのエクステンションを追加
+    if (hintLineIndex !== null && hintLineIndex !== undefined && hintLineIndex >= 0 && hintText) {
+      baseExtensions.push(createLineHintExtension(hintLineIndex, hintText, hintLang))
+    }
+
     return baseExtensions
-  }, [highlightedLineIndex, disabled, onAutoTranslation, onSelectionChange, keySound])
+  }, [
+    highlightedLineIndex,
+    hintLineIndex,
+    hintText,
+    hintLang,
+    disabled,
+    onAutoTranslation,
+    onSelectionChange,
+    keySound,
+  ])
 
   // ハイライトされた行が変更された時にスクロール
   React.useEffect(() => {

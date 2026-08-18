@@ -8,9 +8,12 @@ import { useNotebookActions } from '@/hooks/useNotebookActions'
 import { useSelectionHandlers } from '@/hooks/useSelectionHandlers'
 import { useSpeechHandlers } from '@/hooks/useSpeechHandlers'
 import { useNoteSync } from '@/hooks/useNoteSync'
+import { useMixedReading } from '@/hooks/useMixedReading'
+import { buildMixedLines, countMixableLines, findLineHint } from '@/utils/mixedReading'
 import CodeMirrorEditor from '@/components/common/CodeMirrorEditor'
 import AutoSaveStatus from '@/components/common/AutoSaveStatus'
 import type { AuthManager, FirestoreManager } from '@/lib/firebase'
+import type { Note } from '@/types'
 
 // style.css の @media (max-width: 768px) と対応させること
 const MOBILE_BREAKPOINT = 768
@@ -35,8 +38,26 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     clearTranslationLines,
     performAutoTranslation,
   } = translation
-  const { isSaving, saveNote, setCurrentEditingId, syncFromFirestore } = notes
+  const { isSaving, saveNote, setCurrentEditingId, syncFromFirestore, currentEditingId } = notes
   const { englishText, isDirty, setEnglishText, openNote, startNewNote, markSaved } = session
+
+  // 日本語ペインの英語率。ノートごとに覚えておき、表示だけを変える
+  const { englishPercent, setEnglishPercent, loadForNote } = useMixedReading(currentEditingId)
+
+  // 英語率の入れ替えは「ノートを開いた」ときだけ。自動保存で ID が付いただけの場合と
+  // 区別する必要があるので、ノートの読み込み経路そのものに相乗りさせる
+  const handleNoteLoad = useCallback(
+    (note: Note) => {
+      openNote(note)
+      loadForNote(note.id)
+    },
+    [openNote, loadForNote]
+  )
+
+  const handleStartNewNote = useCallback(() => {
+    startNewNote()
+    loadForNote(null)
+  }, [startNewNote, loadForNote])
 
   // カスタムフックの使用
   const notebookState = useNotebookState()
@@ -75,7 +96,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     translationLines,
     markSaved,
     clearAllSelections: highlightState.clearAllSelections,
-    startNewNote,
+    startNewNote: handleStartNewNote,
     scrollJapaneseToBottom,
     authManager,
     firestoreManager,
@@ -92,6 +113,39 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
   // 訳文テキストは訳文行の連結そのもの。state + effect で同期すると
   // 余分なレンダーが挟まり、一瞬だけ古い訳文が描画される
   const translationText = useMemo(() => translationLines.join('\n'), [translationLines])
+
+  // 日本語ペインの表示用テキスト。英語率に応じて訳文行を英文行に差し替える。
+  // 行数は英文行数のままなので、行インデックスで動くハイライト同期と行単位の
+  // 読み上げには影響しない。保存されるのは translationLines のままで、
+  // 混在させた結果がノートに書き戻ることはない
+  const englishLines = useMemo(() => englishText.split('\n'), [englishText])
+  const mixableLineCount = useMemo(
+    () => countMixableLines(englishLines, translationLines),
+    [englishLines, translationLines]
+  )
+  const displayLines = useMemo(
+    () => buildMixedLines(englishLines, translationLines, englishPercent),
+    [englishLines, translationLines, englishPercent]
+  )
+  const displayText = useMemo(() => displayLines.join('\n'), [displayLines])
+
+  // タップした行の下に、反対の言語を薄く添える。英文行なら訳文、訳文行なら英文。
+  // どちらを読んでいてもその場で見比べられる。出すのは常に1行だけで、
+  // 英語ペイン側のクリックでは出さない（読んでいるのは日本語ペインのため）
+  const lineHint = useMemo(() => {
+    const lineIndex = highlightState.highlightedLineIndex
+    if (lineIndex === null || lineIndex < 0) return null
+    if (highlightState.highlightSource !== 'japanese') return null
+
+    const hint = findLineHint(lineIndex, displayLines, englishLines, translationLines)
+    return hint ? { lineIndex, ...hint } : null
+  }, [
+    highlightState.highlightedLineIndex,
+    highlightState.highlightSource,
+    displayLines,
+    englishLines,
+    translationLines,
+  ])
 
   const selectionHandlers = useSelectionHandlers({
     setEnglishHighlight: highlightState.setEnglishHighlight,
@@ -152,7 +206,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     loadTranslations,
     clearTranslationLines,
     setCurrentEditingId,
-    onNoteLoad: openNote,
+    onNoteLoad: handleNoteLoad,
   })
 
   // 親（App）からタブ切り替え時に自動保存ステータスを消せるようにする
@@ -249,13 +303,33 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
               </span>
             </button>
           )}
-          <h2>Japanese</h2>
+          <div className="japanese-header">
+            <h2>Japanese</h2>
+            {mixableLineCount > 0 && (
+              <label className="mix-ratio-control">
+                <span className="mix-ratio-label">English {englishPercent}%</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={10}
+                  value={englishPercent}
+                  onChange={(event) => setEnglishPercent(Number(event.target.value))}
+                  disabled={disabled}
+                  aria-label="Percentage of lines shown in English"
+                />
+              </label>
+            )}
+          </div>
           <div id="translation-area">
             <CodeMirrorEditor
-              value={translationText}
+              value={displayText}
               onChange={NOOP} // 読み取り専用
               onSelectionChange={selectionHandlers.handleJapaneseSelection}
               highlightedLineIndex={highlightState.highlightedLineIndex}
+              hintLineIndex={lineHint?.lineIndex ?? null}
+              hintText={lineHint?.text ?? ''}
+              hintLang={lineHint?.lang ?? 'japanese'}
               scrollHighlightIntoView={highlightState.highlightSource === 'english'}
               placeholder="Japanese translation will appear here"
               disabled={true} // 読み取り専用
