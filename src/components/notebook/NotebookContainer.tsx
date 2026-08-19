@@ -209,6 +209,20 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     onNoteLoad: handleNoteLoad,
   })
 
+  // 集中モードは英語ペインごと隠すため、抜ける手段が画面上のボタンだけだと
+  // 見失ったときに戻れない。Esc でも抜けられるようにする
+  const { isFocusMode, exitFocusMode } = notebookState
+  useEffect(() => {
+    if (!isFocusMode) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') exitFocusMode()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isFocusMode, exitFocusMode])
+
   // 親（App）からタブ切り替え時に自動保存ステータスを消せるようにする
   useEffect(() => {
     resetAutoSaveStatusRef.current = resetAutoSaveStatus
@@ -227,7 +241,7 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
     <div
       id="notebook-container"
       ref={containerRef}
-      className={`${disabled ? 'disabled-overlay' : ''} ${isMobile ? `mobile-view ${notebookState.currentView}-active` : ''}`}
+      className={`${disabled ? 'disabled-overlay' : ''} ${isMobile ? `mobile-view ${notebookState.currentView}-active` : ''} ${!isMobile && isFocusMode ? 'focus-mode' : ''}`}
     >
       <div className="notebook-slides">
         <div id="english-side" className="notebook-side">
@@ -319,6 +333,16 @@ function NotebookContainer({ resetAutoSaveStatusRef }: NotebookContainerProps) {
                   aria-label="Percentage of lines shown in English"
                 />
               </label>
+            )}
+            {!isMobile && (
+              <button
+                className={`focus-mode-button ${isFocusMode ? 'active' : ''}`}
+                onClick={notebookState.toggleFocusMode}
+                aria-pressed={isFocusMode}
+                title={isFocusMode ? '英語ページを表示する (Esc)' : '日本語を全幅で読む'}
+              >
+                {isFocusMode ? 'Exit' : 'Focus'}
+              </button>
             )}
           </div>
           <div id="translation-area">

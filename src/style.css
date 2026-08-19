@@ -542,6 +542,56 @@ h1 {
   opacity: 0.5;
 }
 
+/* 集中モードの切り替えボタン */
+.focus-mode-button {
+  margin-left: 12px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  color: #7f8c8d;
+  background: transparent;
+  border: 1px solid rgba(127, 140, 141, 0.35);
+  border-radius: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.focus-mode-button:hover {
+  color: #3498db;
+  border-color: rgba(52, 152, 219, 0.6);
+}
+
+.focus-mode-button.active {
+  color: #fff;
+  background: #3498db;
+  border-color: #3498db;
+}
+
+/* 集中モード：英語ページを畳んで日本語を全幅で読む。
+   モバイルはスワイプで単一ペイン全画面になるため対象外 */
+#notebook-container.focus-mode #english-side {
+  display: none;
+}
+
+/* 見開きの綴じ影は2ページ並んでいるときだけ意味がある */
+#notebook-container.focus-mode #japanese-side::before {
+  display: none;
+}
+
+/* 全幅にすると超ワイド画面で1行が長くなりすぎて視線が戻りにくい。
+   テキスト列に上限を設けて中央に置く（ノートPC幅では上限に届かず全幅のまま） */
+#notebook-container.focus-mode .japanese-header,
+#notebook-container.focus-mode #translation-area {
+  max-width: 1200px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 #speak-button,
 #translate-button,
 #save-button,
